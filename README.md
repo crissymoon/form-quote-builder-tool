@@ -12,21 +12,21 @@ Contact: [crissy@xcaliburmoon.net](mailto:crissy@xcaliburmoon.net)
 
 ## Recent Updates
 
+**QuoteValidator and ML model integration**
+2026-02-20 | by CrissyMoon
+Integrated the trained model into the PHP app. Added src/lib/QuoteValidator.php which runs a two-layer check: (1) deterministic rule check re-implementing th...
+
 **project_mgr note sync**
 2026-02-20 | by CrissyMoon
 sync_readme.php reads the last four dated notes and writes a Recent Updates block at the top of README.md. add_note.php calls sync automatically after every...
 
+**ML pricing validation model**
+2026-02-20 | by CrissyMoon
+Added ml/ directory with gen_data.py (generates 2907 labelled rows), quote_math_validation.csv, and quote_math_validator.ipynb (Kaggle notebook). Notebook tr...
+
 **Initial project structure**
 2026-02-20 | by CrissyMoon
 Set up the base project: src, config, assets, build_this, data, design_research, and project_mgr folders. PHPMailer and Math.js dependencies pulled in via se...
-
-**Gitignore and dependency management**
-2026-02-20 | by CrissyMoon
-Added .gitignore blocking .env files, vendor/, assets/js/vendor/, deploy/this/, live data files, composer.phar, and OS/editor artifacts. setup.sh handles all...
-
-**Dev server and router**
-2026-02-20 | by CrissyMoon
-Added router.php for PHP built-in server routing. Static assets served directly; all other requests dispatched to src/index.php. Run with dev.sh.
 
 <!-- xcm:recent-updates:end -->
 
@@ -68,10 +68,13 @@ This project is built as a portable, drop-in framework. A developer configures t
 - Multi-step quote form with pre-built questions, dropdowns, selects, and option groups
 - Logic-driven pricing engine using PHP 8.3+ and Math.js for client-side calculations
 - Estimated price output at form completion based on user-selected service options
+- Two-layer quote validation: deterministic PHP rule check plus optional ML confidence scoring via a trained DecisionTreeClassifier
+- Validation result displayed on the result page showing rule status, model confidence percentage, and any incorrect fields
 - Time-limited reference ID generated per quote submission, configurable in the settings file
 - Email submission via PHPMailer supporting TLS, SMTP with credentials, or server-level no-reply delivery
 - JSON-based data storage with no database dependency, allowing full compatibility with the Xcalibur Agent
 - Expired quote data is summarized and archived into a structured clean data file for future model training
+- Kaggle notebook (`ml/quote_math_validator.ipynb`) trains and evaluates the pricing validation model and exports a portable pkl bundle
 - Go-based build tool (`xcm-build-this`) that compiles the full deployable package from source
 - Service worker integration for real-time, instant updates without requiring users to clear cache or history
 - Versioned asset output with cache-busting built into every build
@@ -107,10 +110,22 @@ The following structure represents the local development environment before a bu
 ```
 /
 |-- src/                    # Form steps, pricing logic, PHP templates
+|   |-- lib/
+|       |-- QuoteEngine.php       # Pricing formula implementation
+|       |-- QuoteValidator.php    # Two-layer validation (rule + ML)
+|       |-- FormSteps.php
+|       |-- ReferenceID.php
 |-- config/                 # Settings files, mailer configuration
 |-- modules/                # Optional compiled modules (Rust or C23)
 |-- data/                   # JSON quote storage and clean data archive
 |-- assets/                 # Stylesheets, JavaScript, and static resources
+|-- ml/                     # Machine learning pricing validation
+|   |-- gen_data.py               # Generates labelled training CSV (2907 rows)
+|   |-- quote_math_validation.csv # Training and validation dataset
+|   |-- quote_math_validator.ipynb# Kaggle notebook: train, evaluate, save model
+|   |-- validate_quote.py         # CLI wrapper called by QuoteValidator.php
+|   |-- quote_math_model.pkl      # Trained DecisionTreeClassifier bundle
+|   |-- verify.py                 # Local dev smoke test for the pkl
 |-- design_research/        # Research notes and design context files
 |-- build_this/             # xcm-build-this Go build tool
 |-- deploy/                 # Output directory created by xcm-build-this
@@ -298,13 +313,34 @@ cd modules/module-name
 make
 ```
 
+### Quote Math Validation Model (Active)
+
+A trained `DecisionTreeClassifier` validates every quote the engine produces. The model and its supporting tooling live in the `ml/` directory and are active in the current codebase.
+
+**How it works**
+
+The `ml/` directory contains:
+
+- `gen_data.py` — generates a labelled CSV of 2907 rows covering every service, complexity, and addon combination, with approximately 15% intentionally miscalculated rows.
+- `quote_math_validation.csv` — the training and validation dataset, also published as a Kaggle dataset at `crissymoon/quote-math-validation`.
+- `quote_math_validator.ipynb` — a Kaggle notebook that loads the CSV, engineers derived features (`expected_subtotal`, `low_delta`, `high_delta`), trains the model, evaluates it, exposes `predict_quote_detail()` with confidence scoring, and saves the trained bundle to `quote_math_model.pkl`.
+- `validate_quote.py` — a CLI script that loads the pkl and accepts quote parameters as arguments, returning a single JSON line to stdout.
+- `quote_math_model.pkl` — the serialised bundle containing the trained model, label encoders, feature list, and all pricing constants.
+
+**Integration with the PHP app**
+
+`src/lib/QuoteValidator.php` runs two checks on every submitted estimate:
+
+1. **Rule check** — re-implements the QuoteEngine formula in PHP and verifies claimed subtotal and range values exactly.
+2. **ML check** — calls `validate_quote.py` via `shell_exec()` and reads the JSON confidence score. Falls back gracefully if Python or the pkl is unavailable on the server.
+
+The combined result is stored with the quote record and displayed on the result page as a Math Verified or Calculation Error Detected badge.
+
 ### Data Cleaning and Summarization Module (Planned)
 
-When a reference ID expires, the associated quote data is not discarded. It is moved through a summarization process and written to a structured clean data file in the `data/` directory. This clean data is intended for use in training a future pricing model.
+When a reference ID expires, the associated quote data is not discarded. It is moved through a summarization process and written to a structured clean data file in the `data/` directory.
 
-The data cleaning and summarization pipeline will be implemented as a compiled module written in Rust or C23. This component operates independently from the PHP application. It reads expired quote records from the JSON store, applies summarization and behavioral pattern analysis, and writes the output to a designated clean data archive.
-
-This module is a planned component. Contributors interested in this area are encouraged to open a discussion in the repository before beginning work.
+The data cleaning and summarization pipeline will be implemented as a compiled module written in Rust or C23. It operates independently from the PHP application, reads expired quote records from the JSON store, applies summarization and behavioral pattern analysis, and writes the output to the clean data archive.
 
 All optional modules must be portable and build cleanly on Linux, macOS, and Windows server environments using the provided Makefile.
 

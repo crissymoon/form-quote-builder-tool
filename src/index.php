@@ -24,6 +24,42 @@ require_once APP_ROOT . '/lib/FormSteps.php';
 
 session_start();
 
+// Demo mode: renders a pre-populated result view for visual testing
+if (isset($_GET['demo'])) {
+    $_SESSION['last_quote'] = [
+        'ref_id'     => 'XCM-DEMO-EXAMPLE',
+        'created_at' => time(),
+        'expires_at' => time() + (14 * 86400),
+        'status'     => 'active',
+        'quote_data' => [
+            'service_type'    => 'ai_web_app',
+            'project_name'    => 'Example AI-Driven Web Application',
+            'complexity'      => 'complex',
+            'addons'          => ['seo_advanced', 'api_integration', 'automation'],
+            'contact_name'    => 'Jane Smith',
+            'contact_email'   => 'jane@example.com',
+            'contact_company' => 'Acme Corp',
+            'timeline'        => '3-6 months',
+        ],
+        'estimate'   => [
+            'base'        => 9500,
+            'multiplier'  => 2.0,
+            'addon_total' => 4900,
+            'subtotal'    => 23900,
+            'range_low'   => 21510,
+            'range_high'  => 28680,
+            'currency'    => 'USD',
+        ],
+    ];
+    $isResult    = true;
+    $step        = 0;
+    ob_start();
+    require APP_ROOT . '/templates/result.php';
+    $pageContent = ob_get_clean();
+    require APP_ROOT . '/templates/layout.php';
+    exit;
+}
+
 $step = isset($_GET['step']) ? (int) $_GET['step'] : 1;
 $totalSteps = FormSteps::count();
 $step = max(1, min($step, $totalSteps + 1));

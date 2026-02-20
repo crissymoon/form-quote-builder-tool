@@ -30,10 +30,12 @@ php "${ROOT}/project_mgr/sync_readme.php"
 
 echo ""
 echo "---"
-echo "  App:            http://${HOST}:${PORT}"
-echo "  Add a note:     php project_mgr/add_note.php --user \"Name\" --title \"Title\" --body \"Text\""
-echo "  Sync README:    php project_mgr/sync_readme.php"
-echo "  Re-run setup:   bash setup.sh"
+echo "  Project Manager: http://${HOST}:${PORT}/project-mgr"
+echo "  Form Builder:    http://${HOST}:${PORT}/"
+echo "  Form Example:    http://${HOST}:${PORT}/?demo=1"
+echo "  Add a note:      php project_mgr/add_note.php --user \"Name\" --title \"Title\" --body \"Text\""
+echo "  Sync README:     php project_mgr/sync_readme.php"
+echo "  Re-run setup:    bash setup.sh"
 echo "---"
 echo "Starting server... (Ctrl+C to stop)"
 echo ""
@@ -50,12 +52,20 @@ for i in {1..20}; do
     sleep 0.1
 done
 
-# Open the browser (macOS: open, Linux: xdg-open)
-URL="http://${HOST}:${PORT}"
+# Open all 3 views in the browser (macOS: open, Linux: xdg-open)
+BASE="http://${HOST}:${PORT}"
 if command -v open &>/dev/null; then
-    open "${URL}"
+    open "${BASE}/project-mgr"
+    sleep 0.3
+    open "${BASE}/"
+    sleep 0.3
+    open "${BASE}/?demo=1"
 elif command -v xdg-open &>/dev/null; then
-    xdg-open "${URL}"
+    xdg-open "${BASE}/project-mgr" &
+    sleep 0.3
+    xdg-open "${BASE}/" &
+    sleep 0.3
+    xdg-open "${BASE}/?demo=1" &
 fi
 
 # Wait for the server process so Ctrl+C works cleanly

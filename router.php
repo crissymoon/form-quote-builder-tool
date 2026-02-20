@@ -16,6 +16,12 @@ if (php_sapi_name() !== 'cli-server') {
 
 $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/';
 
+// Project manager web view (dev server only)
+if ($uri === '/project-mgr' || str_starts_with($uri, '/project-mgr/')) {
+    require __DIR__ . '/project_mgr/web.php';
+    return;
+}
+
 // Serve static files (CSS, JS, images, fonts, ico) directly
 if (
     $uri !== '/' &&

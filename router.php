@@ -16,6 +16,12 @@ if (php_sapi_name() !== 'cli-server') {
 
 $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/';
 
+// Dashboard (dev server only)
+if ($uri === '/dashboard' || str_starts_with($uri, '/dashboard?')) {
+    require __DIR__ . '/project_mgr/dashboard.php';
+    return;
+}
+
 // Project manager web view (dev server only)
 if ($uri === '/project-mgr' || str_starts_with($uri, '/project-mgr/')) {
     require __DIR__ . '/project_mgr/web.php';

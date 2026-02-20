@@ -1,0 +1,11 @@
+[package]
+name = "xcm-dev"
+version = "1.0.0"
+edition = "2021"
+description = "XcaliburMoon development launcher - finds a free port, starts the PHP server, and opens the dashboard. Reusable in any PHP project."
+
+[[bin]]
+name = "xcm-dev"
+path = "src/main.rs"
+
+[dependencies]

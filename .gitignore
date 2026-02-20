@@ -48,6 +48,9 @@ assets/js/vendor/
 build_this/xcm-build-this
 build_this/xcm-build-this.exe
 
+# Rust build artifacts (devtool)
+devtool/target/
+
 # Compiled module binaries
 modules/**/*.so
 modules/**/*.dylib

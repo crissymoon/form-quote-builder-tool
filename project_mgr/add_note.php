@@ -125,4 +125,13 @@ if (!preg_match($pattern, $contributors)) {
 
 fwrite(STDOUT, "Note created: {$notePath}\n");
 fwrite(STDOUT, "Contributor recorded: {$user}\n");
+
+// Sync README with the latest notes
+require_once __DIR__ . '/sync_readme.php';
+$readmeFile  = __DIR__ . '/../README.md';
+$syncResult  = syncReadme(rtrim($notesDir, '/'), $readmeFile);
+if ($syncResult !== 0) {
+    fwrite(STDERR, "Warning: README sync failed.\n");
+}
+
 exit(0);

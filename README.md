@@ -8,6 +8,29 @@ Contact: [crissy@xcaliburmoon.net](mailto:crissy@xcaliburmoon.net)
 
 ---
 
+<!-- xcm:recent-updates:start -->
+
+## Recent Updates
+
+**project_mgr note sync**
+2026-02-20 | by CrissyMoon
+sync_readme.php reads the last four dated notes and writes a Recent Updates block at the top of README.md. add_note.php calls sync automatically after every...
+
+**Initial project structure**
+2026-02-20 | by CrissyMoon
+Set up the base project: src, config, assets, build_this, data, design_research, and project_mgr folders. PHPMailer and Math.js dependencies pulled in via se...
+
+**Gitignore and dependency management**
+2026-02-20 | by CrissyMoon
+Added .gitignore blocking .env files, vendor/, assets/js/vendor/, deploy/this/, live data files, composer.phar, and OS/editor artifacts. setup.sh handles all...
+
+**Dev server and router**
+2026-02-20 | by CrissyMoon
+Added router.php for PHP built-in server routing. Static assets served directly; all other requests dispatched to src/index.php. Run with dev.sh.
+
+<!-- xcm:recent-updates:end -->
+
+
 ## Table of Contents
 
 - [Description](#description)

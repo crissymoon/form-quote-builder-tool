@@ -1,6 +1,10 @@
 <?php
 declare(strict_types=1);
 
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+use PHPMailer\PHPMailer\SMTP;
+
 /**
  * sendQuoteEmail
  *
@@ -12,14 +16,10 @@ function sendQuoteEmail(array $record): bool
     // Autoload PHPMailer. Adjust path if Composer vendor is elsewhere.
     $autoload = __DIR__ . '/../vendor/autoload.php';
     if (!file_exists($autoload)) {
-        error_log('XCM Mailer: Composer autoload not found. Run composer install.');
+        error_log('XCM Mailer: Composer autoload not found. Run: bash setup.sh');
         return false;
     }
     require_once $autoload;
-
-    use PHPMailer\PHPMailer\PHPMailer;
-    use PHPMailer\PHPMailer\Exception;
-    use PHPMailer\PHPMailer\SMTP;
 
     $mail = new PHPMailer(true);
 

@@ -1,0 +1,32 @@
+# 1. Prevent Directory Browsing
+Options -Indexes
+
+# 2. Block direct access to data files (Security Requirement)
+<FilesMatch "\.(json|log|sqlite|sh|bak)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# 3. Safari-Friendly Cache Control
+# Ensure JS/CSS are cached but check for updates (relying on your Go versioning)
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresDefault "access plus 1 month"
+    ExpiresByType text/html "access plus 0 seconds"
+</IfModule>
+
+# 4. The Router (Pretty URLs)
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+    # Don't rewrite if the file or directory actually exists
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    # Send everything else to index.php
+    RewriteRule ^(.*)$ index.php [L,QSA]
+</IfModule>

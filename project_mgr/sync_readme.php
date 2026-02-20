@@ -144,14 +144,17 @@ function syncReadme(string $notesDir, string $readmeFile): int
             $block,
             $readme
         );
+        if ($updated === null) {
+            fwrite(STDERR, "sync_readme: PCRE error while replacing existing block.\n");
+            return 1;
+        }
     } else {
         // Insert after the first standalone --- line
         $updated = preg_replace('/^(---)$/m', "$1\n\n" . $block, $readme, 1);
-    }
-
-    if ($updated === null || $updated === $readme) {
-        fwrite(STDERR, "sync_readme: No insertion point found in README.md. Add a --- separator after the header.\n");
-        return 1;
+        if ($updated === null || $updated === $readme) {
+            fwrite(STDERR, "sync_readme: No insertion point found in README.md. Add a --- separator after the header.\n");
+            return 1;
+        }
     }
 
     if (file_put_contents($readmeFile, $updated) === false) {

@@ -39,4 +39,24 @@ echo "Starting server... (Ctrl+C to stop)"
 echo ""
 
 cd "${ROOT}"
-exec php -S "${HOST}:${PORT}" router.php
+php -S "${HOST}:${PORT}" router.php &
+SERVER_PID=$!
+
+# Wait for the server to be ready before opening the browser
+for i in {1..20}; do
+    if curl -s --max-time 1 "http://${HOST}:${PORT}/" -o /dev/null 2>/dev/null; then
+        break
+    fi
+    sleep 0.1
+done
+
+# Open the browser (macOS: open, Linux: xdg-open)
+URL="http://${HOST}:${PORT}"
+if command -v open &>/dev/null; then
+    open "${URL}"
+elif command -v xdg-open &>/dev/null; then
+    xdg-open "${URL}"
+fi
+
+# Wait for the server process so Ctrl+C works cleanly
+wait "${SERVER_PID}"

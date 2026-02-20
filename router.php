@@ -28,6 +28,12 @@ if ($uri === '/project-mgr' || str_starts_with($uri, '/project-mgr/')) {
     return;
 }
 
+// Form Builder
+if ($uri === '/form-builder' || str_starts_with($uri, '/form-builder?') || str_starts_with($uri, '/form-builder/')) {
+    require __DIR__ . '/src/builder/index.php';
+    return;
+}
+
 // Serve static files (CSS, JS, images, fonts, ico) directly
 if (
     $uri !== '/' &&

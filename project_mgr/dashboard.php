@@ -465,7 +465,8 @@ if (preg_match('#github\.com[:/](.+?)(?:\.git)?$#', $remote, $m)) {
     <div class="row-gap">
         <p class="sec-title">Open</p>
         <div class="shortcut-row">
-            <a href="/" target="_blank" class="shortcut-link">Form Builder</a>
+            <a href="/form-builder" target="_blank" class="shortcut-link">Form Builder</a>
+            <a href="/" target="_blank" class="shortcut-link">Quote Form</a>
             <a href="/?demo=1" target="_blank" class="shortcut-link">Form Example</a>
             <a href="/project-mgr" target="_blank" class="shortcut-link">Project Manager</a>
             <?php if ($repoUrl): ?>

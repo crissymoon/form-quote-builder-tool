@@ -104,6 +104,22 @@ a:hover { color: var(--c-accent); }
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+.toolbar-create-btn {
+    height: 100%;
+    padding: 0 1.1rem;
+    background: none;
+    border: none;
+    border-left: 1px solid #1e3a38;
+    color: var(--c-accent);
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s;
+}
+.toolbar-create-btn:hover { background: var(--c-primary); color: var(--c-hdr-text); }
 .toolbar-save-btn {
     height: 100%;
     padding: 0 1.2rem;
@@ -567,6 +583,7 @@ a:hover { color: var(--c-accent); }
 
     <div class="toolbar-spacer"></div>
     <div class="toolbar-right">
+        <button class="toolbar-create-btn" onclick="newForm()" title="Create a new form">+ Create Form</button>
         <div class="toolbar-form-name" id="toolbar-form-name">—</div>
         <span class="save-indicator" id="save-indicator">Saved</span>
         <button class="toolbar-save-btn" onclick="saveForm()">Save</button>

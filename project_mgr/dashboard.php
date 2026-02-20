@@ -190,39 +190,58 @@ if (preg_match('#github\.com[:/](.+?)(?:\.git)?$#', $remote, $m)) {
     <title>Dev Dashboard - XcaliburMoon</title>
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        html { font-size: 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #182523; background: #fcfdfd; }
+
+        :root {
+            --dash-primary:     #244c47;
+            --dash-primary-dk:  #1a3835;
+            --dash-accent:      #459289;
+            --dash-bg:          #fcfdfd;
+            --dash-surface:     #eaf5f4;
+            --dash-border:      #c8dedd;
+            --dash-text:        #182523;
+            --dash-muted:       #556b69;
+            --dash-header-bg:   #081110;
+            --dash-header-text: #eaf5f4;
+            --dash-tab-bg:      #181f1e;
+            --dash-term-bg:     #081110;
+            --dash-term-text:   #a8ccc9;
+            --dash-radius:      0px;
+            --dash-font:        -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        html { font-size: 15px; font-family: var(--dash-font); color: var(--dash-text); background: var(--dash-bg); }
         body { min-height: 100vh; display: flex; flex-direction: column; }
-        a { color: #244c47; }
+        a { color: var(--dash-primary); }
 
         /* header */
         .dash-header {
-            background: #081110;
-            color: #eaf5f4;
+            background: var(--dash-header-bg);
+            color: var(--dash-header-text);
             padding: 0.75rem 1.5rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 1rem;
             flex-wrap: wrap;
-            border-bottom: 2px solid #244c47;
+            border-bottom: 2px solid var(--dash-primary);
         }
         .dash-header-left { display: flex; align-items: baseline; gap: 1rem; }
-        .dash-title { font-size: 1rem; font-weight: 700; letter-spacing: 0.03em; color: #eaf5f4; }
-        .dash-subtitle { font-size: 0.72rem; color: #556b69; }
-        .dash-status { font-size: 0.72rem; color: #459289; font-family: monospace; }
+        .dash-title { font-size: 1rem; font-weight: 700; letter-spacing: 0.03em; color: var(--dash-header-text); }
+        .dash-subtitle { font-size: 0.72rem; color: var(--dash-muted); }
+        .dash-status { font-size: 0.72rem; color: var(--dash-accent); font-family: monospace; }
 
         /* tabs */
         .tab-bar {
-            background: #181f1e;
+            background: var(--dash-tab-bg);
             display: flex;
             gap: 0;
-            border-bottom: 2px solid #244c47;
+            border-bottom: 2px solid var(--dash-primary);
             overflow-x: auto;
         }
         .tab-btn {
             background: none;
             border: none;
-            color: #556b69;
+            color: var(--dash-muted);
             padding: 0.65rem 1.2rem;
             font-size: 0.78rem;
             font-weight: 600;
@@ -233,8 +252,8 @@ if (preg_match('#github\.com[:/](.+?)(?:\.git)?$#', $remote, $m)) {
             transition: color 0.15s;
             white-space: nowrap;
         }
-        .tab-btn:hover { color: #a8ccc9; }
-        .tab-btn.active { color: #eaf5f4; border-bottom-color: #459289; }
+        .tab-btn:hover { color: var(--dash-term-text); }
+        .tab-btn.active { color: var(--dash-header-text); border-bottom-color: var(--dash-accent); }
 
         /* panels */
         .tab-panel { display: none; flex: 1; }
@@ -257,13 +276,14 @@ if (preg_match('#github\.com[:/](.+?)(?:\.git)?$#', $remote, $m)) {
         /* info cards */
         .info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; }
         .info-card {
-            background: #eaf5f4;
-            border-left: 4px solid #244c47;
+            background: var(--dash-surface);
+            border-left: 4px solid var(--dash-primary);
             padding: 0.65rem 0.85rem;
+            border-radius: var(--dash-radius);
         }
-        .info-card-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; color: #556b69; margin-bottom: 0.2rem; }
-        .info-card-value { font-size: 0.92rem; font-weight: 700; color: #182523; }
-        .info-card-value.ok { color: #244c47; }
+        .info-card-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dash-muted); margin-bottom: 0.2rem; }
+        .info-card-value { font-size: 0.92rem; font-weight: 700; color: var(--dash-text); }
+        .info-card-value.ok { color: var(--dash-primary); }
         .info-card-value.warn { color: #8a4a00; }
 
         /* shortcut links */
@@ -271,18 +291,19 @@ if (preg_match('#github\.com[:/](.+?)(?:\.git)?$#', $remote, $m)) {
         .shortcut-link {
             font-size: 0.78rem;
             font-weight: 600;
-            color: #eaf5f4;
-            background: #244c47;
+            color: var(--dash-header-text);
+            background: var(--dash-primary);
             padding: 0.4rem 0.85rem;
             text-decoration: none;
-            border: 1px solid #244c47;
+            border: 1px solid var(--dash-primary);
+            border-radius: var(--dash-radius);
         }
-        .shortcut-link:hover { background: #1a3835; }
+        .shortcut-link:hover { background: var(--dash-primary-dk); }
 
         /* terminal output */
         .terminal {
-            background: #081110;
-            color: #a8ccc9;
+            background: var(--dash-term-bg);
+            color: var(--dash-term-text);
             font-family: 'SFMono-Regular', 'Consolas', monospace;
             font-size: 0.76rem;
             padding: 0.85rem 1rem;
@@ -293,22 +314,23 @@ if (preg_match('#github\.com[:/](.+?)(?:\.git)?$#', $remote, $m)) {
             word-break: break-all;
             margin-bottom: 1rem;
         }
-        .terminal.empty { color: #556b69; font-style: italic; }
+        .terminal.empty { color: var(--dash-muted); font-style: italic; }
 
         /* forms / inputs */
         .field-row { margin-bottom: 0.85rem; }
-        .field-label { display: block; font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #556b69; margin-bottom: 0.3rem; }
+        .field-label { display: block; font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--dash-muted); margin-bottom: 0.3rem; }
         .field-input, .field-textarea, .field-select {
             width: 100%;
             padding: 0.5rem 0.65rem;
-            border: 1px solid #c8dedd;
-            background: #fff;
-            color: #182523;
+            border: 1px solid var(--dash-border);
+            background: var(--dash-bg);
+            color: var(--dash-text);
             font-size: 0.85rem;
             font-family: inherit;
+            border-radius: var(--dash-radius);
         }
         .field-textarea { font-family: 'SFMono-Regular', 'Consolas', monospace; font-size: 0.76rem; resize: vertical; }
-        .field-input:focus, .field-textarea:focus { outline: 2px solid #244c47; }
+        .field-input:focus, .field-textarea:focus, .field-select:focus { outline: 2px solid var(--dash-primary); }
 
         /* buttons */
         .btn {
@@ -319,23 +341,28 @@ if (preg_match('#github\.com[:/](.+?)(?:\.git)?$#', $remote, $m)) {
             padding: 0.5rem 1rem;
             border: none;
             cursor: pointer;
+            border-radius: var(--dash-radius);
         }
-        .btn-primary { background: #244c47; color: #eaf5f4; }
-        .btn-primary:hover { background: #1a3835; }
-        .btn-secondary { background: #eaf5f4; color: #244c47; border: 1px solid #244c47; }
-        .btn-secondary:hover { background: #d4e8e6; }
+        .btn-primary { background: var(--dash-primary); color: var(--dash-header-text); }
+        .btn-primary:hover { background: var(--dash-primary-dk); }
+        .btn-secondary { background: var(--dash-surface); color: var(--dash-primary); border: 1px solid var(--dash-primary); }
+        .btn-secondary:hover { background: var(--dash-border); }
         .btn-danger { background: #5a1a1a; color: #fce8e8; }
         .btn-danger:hover { background: #3d0f0f; }
         .btn-row { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 1rem; }
 
-        /* git log */
-        .git-log-line { padding: 0.3rem 0; border-bottom: 1px solid #eaf5f4; font-size: 0.8rem; font-family: monospace; color: #182523; }
+        /* git log — must be light text inside dark terminal */
+        .terminal .git-log-line { padding: 0.3rem 0; border-bottom: 1px solid #1e2e2c; font-size: 0.8rem; font-family: monospace; color: var(--dash-term-text); }
+        .terminal .git-log-line:last-child { border-bottom: none; }
+        .terminal .git-hash { color: var(--dash-accent); font-weight: 700; margin-right: 0.5rem; }
+        /* git log outside terminal (overview log rendered as plain divs) */
+        .git-log-line { padding: 0.3rem 0; border-bottom: 1px solid var(--dash-border); font-size: 0.8rem; font-family: monospace; color: var(--dash-text); }
         .git-log-line:last-child { border-bottom: none; }
-        .git-hash { color: #244c47; font-weight: 700; margin-right: 0.5rem; }
+        .git-hash { color: var(--dash-primary); font-weight: 700; margin-right: 0.5rem; }
         .git-branch-badge {
             display: inline-block;
-            background: #244c47;
-            color: #eaf5f4;
+            background: var(--dash-primary);
+            color: var(--dash-header-text);
             font-size: 0.65rem;
             font-weight: 700;
             padding: 0.1rem 0.4rem;
@@ -346,7 +373,7 @@ if (preg_match('#github\.com[:/](.+?)(?:\.git)?$#', $remote, $m)) {
 
         /* notes list */
         .note-row {
-            border-bottom: 1px solid #eaf5f4;
+            border-bottom: 1px solid var(--dash-surface);
             padding: 0.55rem 0;
             display: flex;
             justify-content: space-between;
@@ -354,8 +381,8 @@ if (preg_match('#github\.com[:/](.+?)(?:\.git)?$#', $remote, $m)) {
             flex-wrap: wrap;
             gap: 0.5rem;
         }
-        .note-row-title { font-size: 0.85rem; font-weight: 600; color: #182523; }
-        .note-row-meta { font-size: 0.72rem; color: #556b69; font-family: monospace; }
+        .note-row-title { font-size: 0.85rem; font-weight: 600; color: var(--dash-text); }
+        .note-row-meta { font-size: 0.72rem; color: var(--dash-muted); font-family: monospace; }
 
         /* settings textarea */
         #settings-content { min-height: 360px; }
@@ -365,16 +392,42 @@ if (preg_match('#github\.com[:/](.+?)(?:\.git)?$#', $remote, $m)) {
 
         /* status badge */
         .badge { font-size: 0.65rem; font-weight: 700; padding: 0.1rem 0.4rem; text-transform: uppercase; letter-spacing: 0.06em; display: inline-block; }
-        .badge-ok   { background: #eaf5f4; color: #244c47; border: 1px solid #244c47; }
+        .badge-ok   { background: var(--dash-surface); color: var(--dash-primary); border: 1px solid var(--dash-primary); }
         .badge-warn { background: #fff3e0; color: #8a4a00; border: 1px solid #b06a00; }
 
         .dash-footer {
             padding: 0.5rem 1.5rem;
-            background: #081110;
-            color: #556b69;
+            background: var(--dash-header-bg);
+            color: var(--dash-muted);
             font-size: 0.68rem;
             text-align: center;
         }
+
+        /* appearance panel */
+        .appearance-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+        .appearance-card {
+            border: 2px solid var(--dash-border);
+            padding: 0.85rem 1rem;
+            cursor: pointer;
+            background: var(--dash-bg);
+        }
+        .appearance-card:hover { border-color: var(--dash-primary); }
+        .appearance-card.selected { border-color: var(--dash-primary); background: var(--dash-surface); }
+        .appearance-card-name { font-weight: 700; font-size: 0.85rem; color: var(--dash-text); }
+        .appearance-card-desc { font-size: 0.72rem; color: var(--dash-muted); margin-top: 0.2rem; }
+        .appearance-swatches { display: flex; gap: 4px; margin-top: 0.5rem; }
+        .appearance-swatch { width: 18px; height: 18px; display: inline-block; }
+        .appearance-inline { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+        .appearance-inline label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--dash-muted); min-width: 90px; }
+        .appearance-inline input[type=color] { width: 38px; height: 28px; padding: 0; border: 1px solid var(--dash-border); cursor: pointer; background: none; }
+        .appearance-inline input[type=range] { flex: 1; min-width: 120px; max-width: 220px; cursor: pointer; }
+        .appearance-inline select { padding: 0.3rem 0.5rem; border: 1px solid var(--dash-border); font-size: 0.82rem; color: var(--dash-text); background: var(--dash-bg); font-family: inherit; }
+        .appearance-inline .range-val { font-size: 0.78rem; font-family: monospace; min-width: 36px; color: var(--dash-text); }
     </style>
 </head>
 <body>
@@ -388,11 +441,12 @@ if (preg_match('#github\.com[:/](.+?)(?:\.git)?$#', $remote, $m)) {
 </header>
 
 <nav class="tab-bar" role="tablist">
-    <button class="tab-btn active" data-panel="panel-overview"   role="tab">Overview</button>
-    <button class="tab-btn"        data-panel="panel-github"     role="tab">GitHub</button>
-    <button class="tab-btn"        data-panel="panel-build"      role="tab">Build</button>
-    <button class="tab-btn"        data-panel="panel-notes"      role="tab">Notes</button>
-    <button class="tab-btn"        data-panel="panel-settings"   role="tab">Settings</button>
+    <button class="tab-btn active" data-panel="panel-overview"    role="tab">Overview</button>
+    <button class="tab-btn"        data-panel="panel-github"      role="tab">GitHub</button>
+    <button class="tab-btn"        data-panel="panel-build"       role="tab">Build</button>
+    <button class="tab-btn"        data-panel="panel-notes"       role="tab">Notes</button>
+    <button class="tab-btn"        data-panel="panel-settings"    role="tab">Settings</button>
+    <button class="tab-btn"        data-panel="panel-appearance"  role="tab">Appearance</button>
 </nav>
 
 <!-- OVERVIEW ------------------------------------------------------------------>
@@ -535,6 +589,150 @@ if (preg_match('#github\.com[:/](.+?)(?:\.git)?$#', $remote, $m)) {
         </div>
         <div id="settings-out" class="terminal empty" style="display:none;"></div>
     </div>
+</div>
+</div>
+
+<!-- APPEARANCE ------------------------------------------------------------->
+<div id="panel-appearance" class="tab-panel">
+<div class="panel-inner">
+
+    <div class="row-gap">
+        <p class="sec-title">Presets</p>
+        <div class="appearance-grid" id="preset-grid">
+            <div class="appearance-card selected" data-preset="default">
+                <div class="appearance-card-name">Default Dark</div>
+                <div class="appearance-card-desc">Dark header, light body, teal primary</div>
+                <div class="appearance-swatches">
+                    <span class="appearance-swatch" style="background:#081110"></span>
+                    <span class="appearance-swatch" style="background:#244c47"></span>
+                    <span class="appearance-swatch" style="background:#eaf5f4"></span>
+                    <span class="appearance-swatch" style="background:#fcfdfd"></span>
+                </div>
+            </div>
+            <div class="appearance-card" data-preset="light">
+                <div class="appearance-card-name">Light</div>
+                <div class="appearance-card-desc">White background, navy primary</div>
+                <div class="appearance-swatches">
+                    <span class="appearance-swatch" style="background:#1a2744"></span>
+                    <span class="appearance-swatch" style="background:#2d4fa3"></span>
+                    <span class="appearance-swatch" style="background:#e8edf8"></span>
+                    <span class="appearance-swatch" style="background:#ffffff"></span>
+                </div>
+            </div>
+            <div class="appearance-card" data-preset="midnight">
+                <div class="appearance-card-name">Midnight</div>
+                <div class="appearance-card-desc">Full dark, purple accent</div>
+                <div class="appearance-swatches">
+                    <span class="appearance-swatch" style="background:#0d0d14"></span>
+                    <span class="appearance-swatch" style="background:#5c3d8f"></span>
+                    <span class="appearance-swatch" style="background:#2a1f3d"></span>
+                    <span class="appearance-swatch" style="background:#13111e"></span>
+                </div>
+            </div>
+            <div class="appearance-card" data-preset="slate">
+                <div class="appearance-card-name">Slate</div>
+                <div class="appearance-card-desc">Blue-grey, high contrast</div>
+                <div class="appearance-swatches">
+                    <span class="appearance-swatch" style="background:#1e2a38"></span>
+                    <span class="appearance-swatch" style="background:#3b6ea5"></span>
+                    <span class="appearance-swatch" style="background:#dde8f5"></span>
+                    <span class="appearance-swatch" style="background:#f4f7fb"></span>
+                </div>
+            </div>
+            <div class="appearance-card" data-preset="forest">
+                <div class="appearance-card-name">Forest</div>
+                <div class="appearance-card-desc">Deep green on cream</div>
+                <div class="appearance-swatches">
+                    <span class="appearance-swatch" style="background:#1a2e1a"></span>
+                    <span class="appearance-swatch" style="background:#3a6b3a"></span>
+                    <span class="appearance-swatch" style="background:#eaf2ea"></span>
+                    <span class="appearance-swatch" style="background:#f8fbf8"></span>
+                </div>
+            </div>
+            <div class="appearance-card" data-preset="mono">
+                <div class="appearance-card-name">Monochrome</div>
+                <div class="appearance-card-desc">Black, white, grey only</div>
+                <div class="appearance-swatches">
+                    <span class="appearance-swatch" style="background:#111111"></span>
+                    <span class="appearance-swatch" style="background:#333333"></span>
+                    <span class="appearance-swatch" style="background:#eeeeee"></span>
+                    <span class="appearance-swatch" style="background:#ffffff"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row-gap">
+        <p class="sec-title">Custom Colors</p>
+        <div style="display:flex; flex-direction:column; gap:0.7rem;">
+            <div class="appearance-inline">
+                <label>Primary</label>
+                <input type="color" id="ap-primary" value="#244c47">
+                <span style="font-size:0.75rem;color:var(--dash-muted);">Header bar, borders, buttons</span>
+            </div>
+            <div class="appearance-inline">
+                <label>Accent</label>
+                <input type="color" id="ap-accent" value="#459289">
+                <span style="font-size:0.75rem;color:var(--dash-muted);">Active tab indicator, links</span>
+            </div>
+            <div class="appearance-inline">
+                <label>Background</label>
+                <input type="color" id="ap-bg" value="#fcfdfd">
+                <span style="font-size:0.75rem;color:var(--dash-muted);">Page background</span>
+            </div>
+            <div class="appearance-inline">
+                <label>Header bg</label>
+                <input type="color" id="ap-header-bg" value="#081110">
+                <span style="font-size:0.75rem;color:var(--dash-muted);">Top header and tab bar</span>
+            </div>
+            <div class="appearance-inline">
+                <label>Terminal bg</label>
+                <input type="color" id="ap-term-bg" value="#081110">
+                <span style="font-size:0.75rem;color:var(--dash-muted);">Output terminal background</span>
+            </div>
+            <div class="appearance-inline">
+                <label>Terminal text</label>
+                <input type="color" id="ap-term-text" value="#a8ccc9">
+            </div>
+        </div>
+    </div>
+
+    <div class="row-gap">
+        <p class="sec-title">Typography</p>
+        <div class="appearance-inline">
+            <label>Font</label>
+            <select id="ap-font">
+                <option value="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">System UI (default)</option>
+                <option value="'Inter', 'Helvetica Neue', Arial, sans-serif">Inter</option>
+                <option value="'IBM Plex Mono', 'SFMono-Regular', 'Consolas', monospace">IBM Plex Mono</option>
+                <option value="Georgia, 'Times New Roman', serif">Georgia (serif)</option>
+                <option value="'Trebuchet MS', 'Lucida Grande', sans-serif">Trebuchet</option>
+            </select>
+        </div>
+        <div class="appearance-inline" style="margin-top:0.7rem;">
+            <label>Font size</label>
+            <input type="range" id="ap-fontsize" min="12" max="20" step="1" value="15">
+            <span class="range-val" id="ap-fontsize-val">15px</span>
+        </div>
+    </div>
+
+    <div class="row-gap">
+        <p class="sec-title">Shape</p>
+        <div class="appearance-inline">
+            <label>Border radius</label>
+            <input type="range" id="ap-radius" min="0" max="12" step="1" value="0">
+            <span class="range-val" id="ap-radius-val">0px</span>
+        </div>
+    </div>
+
+    <div class="row-gap">
+        <div class="btn-row">
+            <button class="btn btn-primary" onclick="applyAppearance()">Apply</button>
+            <button class="btn btn-secondary" onclick="resetAppearance()">Reset to Default</button>
+        </div>
+        <div id="appearance-out" class="terminal empty" style="display:none;"></div>
+    </div>
+
 </div>
 </div>
 
@@ -745,6 +943,185 @@ if (preg_match('#github\.com[:/](.+?)(?:\.git)?$#', $remote, $m)) {
             term(out, d.output || d.error || JSON.stringify(d), false);
         });
     };
+
+    // ── appearance ────────────────────────────────────────────────────────────
+    var PRESETS = {
+        'default':  { primary:'#244c47', primaryDk:'#1a3835', accent:'#459289', bg:'#fcfdfd',
+                      surface:'#eaf5f4', border:'#c8dedd', text:'#182523', muted:'#556b69',
+                      headerBg:'#081110', headerText:'#eaf5f4', tabBg:'#181f1e',
+                      termBg:'#081110', termText:'#a8ccc9' },
+        'light':    { primary:'#1a2744', primaryDk:'#111a2e', accent:'#2d4fa3', bg:'#ffffff',
+                      surface:'#e8edf8', border:'#b8c8e8', text:'#0e1724', muted:'#3d5275',
+                      headerBg:'#1a2744', headerText:'#e8edf8', tabBg:'#111a2e',
+                      termBg:'#0a0e18', termText:'#9ab4d8' },
+        'midnight': { primary:'#5c3d8f', primaryDk:'#3d2460', accent:'#a07fd8', bg:'#13111e',
+                      surface:'#2a1f3d', border:'#3d2e5e', text:'#cec4e8', muted:'#7060a0',
+                      headerBg:'#0d0d14', headerText:'#cec4e8', tabBg:'#0d0d14',
+                      termBg:'#080810', termText:'#b0a0d8' },
+        'slate':    { primary:'#1e2a38', primaryDk:'#131c28', accent:'#3b6ea5', bg:'#f4f7fb',
+                      surface:'#dde8f5', border:'#b0c8e5', text:'#0e1824', muted:'#3a5070',
+                      headerBg:'#1e2a38', headerText:'#dde8f5', tabBg:'#131c28',
+                      termBg:'#0a0e14', termText:'#90b4d0' },
+        'forest':   { primary:'#1a2e1a', primaryDk:'#0f1e0f', accent:'#3a6b3a', bg:'#f8fbf8',
+                      surface:'#eaf2ea', border:'#bbd8bb', text:'#0f1e0f', muted:'#3a5a3a',
+                      headerBg:'#1a2e1a', headerText:'#eaf2ea', tabBg:'#0f1e0f',
+                      termBg:'#0a1208', termText:'#90c890' },
+        'mono':     { primary:'#111111', primaryDk:'#000000', accent:'#555555', bg:'#ffffff',
+                      surface:'#eeeeee', border:'#cccccc', text:'#111111', muted:'#666666',
+                      headerBg:'#111111', headerText:'#eeeeee', tabBg:'#000000',
+                      termBg:'#111111', termText:'#dddddd' }
+    };
+
+    function applyVars(p, radius, fontFamily, fontSize) {
+        var r = document.documentElement;
+        r.style.setProperty('--dash-primary',     p.primary);
+        r.style.setProperty('--dash-primary-dk',  p.primaryDk);
+        r.style.setProperty('--dash-accent',      p.accent);
+        r.style.setProperty('--dash-bg',          p.bg);
+        r.style.setProperty('--dash-surface',     p.surface);
+        r.style.setProperty('--dash-border',      p.border);
+        r.style.setProperty('--dash-text',        p.text);
+        r.style.setProperty('--dash-muted',       p.muted);
+        r.style.setProperty('--dash-header-bg',   p.headerBg);
+        r.style.setProperty('--dash-header-text', p.headerText);
+        r.style.setProperty('--dash-tab-bg',      p.tabBg);
+        r.style.setProperty('--dash-term-bg',     p.termBg);
+        r.style.setProperty('--dash-term-text',   p.termText);
+        r.style.setProperty('--dash-radius',      (radius || 0) + 'px');
+        r.style.setProperty('--dash-font',        fontFamily || PRESETS['default'].font || '-apple-system, BlinkMacSystemFont, \'Segoe UI\', sans-serif');
+        r.style.fontSize = (fontSize || 15) + 'px';
+    }
+
+    function syncInputsFromPreset(key) {
+        var p = PRESETS[key];
+        if (!p) return;
+        document.getElementById('ap-primary').value    = p.primary;
+        document.getElementById('ap-accent').value     = p.accent;
+        document.getElementById('ap-bg').value         = p.bg;
+        document.getElementById('ap-header-bg').value  = p.headerBg;
+        document.getElementById('ap-term-bg').value    = p.termBg;
+        document.getElementById('ap-term-text').value  = p.termText;
+    }
+
+    function currentCustom() {
+        return {
+            primary:    document.getElementById('ap-primary').value,
+            primaryDk:  blendHex(document.getElementById('ap-primary').value, '#000000', 0.25),
+            accent:     document.getElementById('ap-accent').value,
+            bg:         document.getElementById('ap-bg').value,
+            surface:    blendHex(document.getElementById('ap-bg').value, document.getElementById('ap-primary').value, 0.08),
+            border:     blendHex(document.getElementById('ap-bg').value, document.getElementById('ap-primary').value, 0.25),
+            text:       blendHex(document.getElementById('ap-bg').value, '#000000', 0.88),
+            muted:      blendHex(document.getElementById('ap-bg').value, document.getElementById('ap-primary').value, 0.55),
+            headerBg:   document.getElementById('ap-header-bg').value,
+            headerText: blendHex(document.getElementById('ap-header-bg').value, '#ffffff', 0.85),
+            tabBg:      blendHex(document.getElementById('ap-header-bg').value, '#000000', 0.25),
+            termBg:     document.getElementById('ap-term-bg').value,
+            termText:   document.getElementById('ap-term-text').value
+        };
+    }
+
+    function blendHex(hex1, hex2, t) {
+        function parse(h) {
+            h = h.replace('#','');
+            if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+            return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)];
+        }
+        var a = parse(hex1), b = parse(hex2);
+        var r = Math.round(a[0]*(1-t)+b[0]*t);
+        var g = Math.round(a[1]*(1-t)+b[1]*t);
+        var bv= Math.round(a[2]*(1-t)+b[2]*t);
+        return '#'+[r,g,bv].map(function(x){return ('0'+x.toString(16)).slice(-2);}).join('');
+    }
+
+    function getRadius()   { return parseInt(document.getElementById('ap-radius').value, 10) || 0; }
+    function getFontSize() { return parseInt(document.getElementById('ap-fontsize').value, 10) || 15; }
+    function getFont()     { return document.getElementById('ap-font').value; }
+
+    window.applyAppearance = function () {
+        var p      = currentCustom();
+        var radius = getRadius();
+        var fs     = getFontSize();
+        var font   = getFont();
+        applyVars(p, radius, font, fs);
+        var saved  = { preset: 'custom', custom: p, radius: radius, fontSize: fs, font: font };
+        localStorage.setItem('dashAppearance', JSON.stringify(saved));
+        var out = document.getElementById('appearance-out');
+        out.style.display = 'block';
+        term(out, '✔ Appearance applied and saved to localStorage.', false);
+    };
+
+    window.resetAppearance = function () {
+        localStorage.removeItem('dashAppearance');
+        var def = PRESETS['default'];
+        applyVars(def, 0, null, 15);
+        syncInputsFromPreset('default');
+        document.getElementById('ap-radius').value = 0;
+        document.getElementById('ap-radius-val').textContent = '0px';
+        document.getElementById('ap-fontsize').value = 15;
+        document.getElementById('ap-fontsize-val').textContent = '15px';
+        document.getElementById('ap-font').value = '-apple-system, BlinkMacSystemFont, \'Segoe UI\', sans-serif';
+        document.querySelectorAll('#preset-grid .appearance-card').forEach(function(c){ c.classList.remove('selected'); });
+        document.querySelector('#preset-grid [data-preset="default"]').classList.add('selected');
+        var out = document.getElementById('appearance-out');
+        out.style.display = 'block';
+        term(out, '✔ Reset to default.', false);
+    };
+
+    (function initAppearance() {
+        // preset card clicks
+        document.querySelectorAll('#preset-grid .appearance-card').forEach(function(card) {
+            card.addEventListener('click', function() {
+                var key = this.dataset.preset;
+                document.querySelectorAll('#preset-grid .appearance-card').forEach(function(c){ c.classList.remove('selected'); });
+                this.classList.add('selected');
+                syncInputsFromPreset(key);
+                applyVars(PRESETS[key], getRadius(), getFont(), getFontSize());
+            }.bind(card));
+        });
+
+        // range display
+        document.getElementById('ap-radius').addEventListener('input', function() {
+            document.getElementById('ap-radius-val').textContent = this.value + 'px';
+        });
+        document.getElementById('ap-fontsize').addEventListener('input', function() {
+            document.getElementById('ap-fontsize-val').textContent = this.value + 'px';
+        });
+
+        // restore saved settings
+        try {
+            var saved = JSON.parse(localStorage.getItem('dashAppearance') || 'null');
+            if (saved) {
+                var p = (saved.preset !== 'custom' && PRESETS[saved.preset]) ? PRESETS[saved.preset] : saved.custom;
+                applyVars(p, saved.radius || 0, saved.font || null, saved.fontSize || 15);
+                // sync UI
+                if (saved.preset !== 'custom' && PRESETS[saved.preset]) {
+                    syncInputsFromPreset(saved.preset);
+                    document.querySelectorAll('#preset-grid .appearance-card').forEach(function(c){ c.classList.remove('selected'); });
+                    var card = document.querySelector('#preset-grid [data-preset="' + saved.preset + '"]');
+                    if (card) card.classList.add('selected');
+                } else if (saved.custom) {
+                    document.getElementById('ap-primary').value   = saved.custom.primary   || '#244c47';
+                    document.getElementById('ap-accent').value    = saved.custom.accent    || '#459289';
+                    document.getElementById('ap-bg').value        = saved.custom.bg        || '#fcfdfd';
+                    document.getElementById('ap-header-bg').value = saved.custom.headerBg  || '#081110';
+                    document.getElementById('ap-term-bg').value   = saved.custom.termBg    || '#081110';
+                    document.getElementById('ap-term-text').value = saved.custom.termText  || '#a8ccc9';
+                }
+                if (saved.radius !== undefined) {
+                    document.getElementById('ap-radius').value       = saved.radius;
+                    document.getElementById('ap-radius-val').textContent = saved.radius + 'px';
+                }
+                if (saved.fontSize) {
+                    document.getElementById('ap-fontsize').value       = saved.fontSize;
+                    document.getElementById('ap-fontsize-val').textContent = saved.fontSize + 'px';
+                }
+                if (saved.font) {
+                    document.getElementById('ap-font').value = saved.font;
+                }
+            }
+        } catch(e) {}
+    }());
 
     // ── init ─────────────────────────────────────────────────────────────────
     loadOverview();

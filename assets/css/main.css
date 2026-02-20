@@ -489,6 +489,45 @@ a:hover {
     color: #eaf5f4;
 }
 
+/* ---- Validation Badge ---- */
+.validation-badge {
+    margin-bottom: 1.5rem;
+    padding: 0.85rem 1rem;
+    border-left: 4px solid;
+    font-size: 0.85rem;
+}
+
+.validation-badge--valid {
+    border-color: #244c47;
+    background-color: #eaf5f4;
+    color: #182523;
+}
+
+.validation-badge--invalid {
+    border-color: #8b1a1a;
+    background-color: #fdf2f2;
+    color: #5a0f0f;
+}
+
+.validation-badge__label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 0.78rem;
+}
+
+.validation-badge__detail {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    opacity: 0.85;
+}
+
 /* ---- Responsive ---- */
 @media (max-width: 600px) {
     .step-block,

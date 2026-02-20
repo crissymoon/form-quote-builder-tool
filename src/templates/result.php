@@ -13,6 +13,7 @@ if (!$quote || !$estimate) {
 
 $formatMoney = fn(int $amount): string => '$' . number_format($amount, 0, '.', ',');
 $expiresDate = $expires ? date('F j, Y', $expires) : 'N/A';
+$validation  = $quote['validation'] ?? null;
 ?>
 
 <div class="result-block">
@@ -31,6 +32,33 @@ $expiresDate = $expires ? date('F j, Y', $expires) : 'N/A';
     </div>
 
     <div class="ref-id-block">
+
+<?php if ($validation): ?>
+<?php
+    $isValid    = $validation['valid']      ?? false;
+    $ruleOk     = $validation['rule_ok']    ?? false;
+    $mlOk       = $validation['ml_ok'];
+    $conf       = $validation['confidence'];
+    $mlAvail    = $validation['ml_available'] ?? false;
+    $badgeClass = $isValid ? 'validation-badge--valid' : 'validation-badge--invalid';
+    $badgeLabel = $isValid ? 'Math Verified' : 'Calculation Error Detected';
+?>
+    <div class="validation-badge <?= $badgeClass ?>">
+        <span class="validation-badge__label"><?= $badgeLabel ?></span>
+        <ul class="validation-badge__detail">
+            <li>Rule check: <?= $ruleOk ? 'pass' : 'fail' ?></li>
+<?php if ($mlAvail): ?>
+            <li>ML model: <?= $mlOk ? 'pass' : 'fail' ?> &nbsp; confidence <?= number_format($conf * 100, 0) ?>%</li>
+<?php else: ?>
+            <li>ML model: not available</li>
+<?php endif; ?>
+<?php if (!empty($validation['error_fields'])): ?>
+            <li>Wrong fields: <?= htmlspecialchars(implode(', ', $validation['error_fields'])) ?></li>
+<?php endif; ?>
+        </ul>
+    </div>
+<?php endif; ?>
+
         <p class="ref-id-label">Reference ID</p>
         <p class="ref-id-value"><?= htmlspecialchars($refID) ?></p>
         <p class="ref-id-expires">Valid until <?= htmlspecialchars($expiresDate) ?></p>

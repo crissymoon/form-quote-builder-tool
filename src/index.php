@@ -19,6 +19,7 @@ if (!file_exists(CONFIG_PATH)) {
 require_once CONFIG_PATH;
 require_once APP_ROOT . '/../config/mailer.php';
 require_once APP_ROOT . '/lib/QuoteEngine.php';
+require_once APP_ROOT . '/lib/QuoteValidator.php';
 require_once APP_ROOT . '/lib/ReferenceID.php';
 require_once APP_ROOT . '/lib/FormSteps.php';
 
@@ -89,6 +90,21 @@ if ($action === 'submit_quote' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $quoteData  = $_SESSION['quote_data'] ?? [];
     $engine     = new QuoteEngine($quoteData);
     $estimate   = $engine->calculate();
+
+    $validator  = new QuoteValidator();
+    $addons     = $quoteData['addons'] ?? [];
+    if (is_string($addons)) {
+        $addons = array_filter(explode(',', $addons));
+    }
+    $validation = $validator->validate(
+        $quoteData['service_type'] ?? 'web_design',
+        $quoteData['complexity']   ?? 'simple',
+        array_values((array) $addons),
+        $estimate['subtotal'],
+        $estimate['range_low'],
+        $estimate['range_high']
+    );
+
     $refID      = ReferenceID::generate();
     $record     = [
         'ref_id'     => $refID,
@@ -97,6 +113,7 @@ if ($action === 'submit_quote' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         'status'     => 'active',
         'quote_data' => $quoteData,
         'estimate'   => $estimate,
+        'validation' => $validation,
     ];
 
     $stored = ReferenceID::store($record, DATA_PATH);

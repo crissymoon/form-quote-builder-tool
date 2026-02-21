@@ -49,11 +49,39 @@ define('MAIL_FROM_NAME', 'XcaliburMoon Pricing');
 define('MAIL_TO',      'crissy@xcaliburmoon.net');
 
 // ---------------------------------------------------------------
+// Submission Behavior
+// Toggle what happens when a visitor submits the live form.
+// ---------------------------------------------------------------
+
+// Save every submission to a JSON file.
+// true  = write to SUBMISSIONS_FILE on every submit
+// false = do not store submissions on disk
+define('SAVE_SUBMISSIONS', true);
+
+// Send email on submission.
+// true  = attempt to send email via MAIL_MODE
+// false = skip email entirely (useful during development)
+define('SEND_EMAILS', true);
+
+// Send a confirmation copy to the visitor who filled out the form.
+// Only applies when SEND_EMAILS is true and the visitor provided
+// a valid email address in the contact step.
+define('SEND_EMAIL_TO_USER', true);
+
+// Send a notification to the business/developer (MAIL_TO).
+// Only applies when SEND_EMAILS is true.
+define('SEND_EMAIL_TO_ADMIN', true);
+
+// ---------------------------------------------------------------
 // Data Storage
 // ---------------------------------------------------------------
 // Path to JSON data directory. Must not be inside the web root.
 // Default is relative to the project src directory.
 define('DATA_STORE_PATH', __DIR__ . '/../data/');
+
+// File where form submissions are appended.
+// Will be created automatically on the first submission.
+define('SUBMISSIONS_FILE', DATA_STORE_PATH . 'submissions.json');
 
 // ---------------------------------------------------------------
 // Error Reporting

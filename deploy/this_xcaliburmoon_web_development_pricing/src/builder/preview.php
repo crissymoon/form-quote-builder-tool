@@ -16,30 +16,129 @@ if (!$isBuilderPreview && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true);
     if (is_array($input) && ($input['action'] ?? '') === 'submit') {
         header('Content-Type: application/json; charset=utf-8');
-        $emailSent = pvSendEmails($form, $input);
-        echo json_encode(['ok' => $emailSent, 'message' => $emailSent ? 'Your estimate has been sent to your email.' : 'Could not send email at this time. Please take note of your estimate.']);
+        $result = pvHandleSubmission($form, $input);
+        echo json_encode($result);
         exit;
     }
 }
 
-function pvSendEmails(array $form, array $input): bool
+/**
+ * Handle a form submission: save to JSON + send emails.
+ * Returns an associative array with 'ok', 'message', 'saved', 'emailed'.
+ */
+function pvHandleSubmission(array $form, array $input): array
 {
-    // Locate config files relative to this file
-    $base = dirname(__DIR__, 2); // project root or deploy root
+    $base = dirname(__DIR__, 2);
     $settingsFile = $base . '/config/settings.php';
-    $mailerFile   = $base . '/config/mailer.php';
     $autoload     = $base . '/vendor/autoload.php';
 
-    if (!file_exists($settingsFile) || !file_exists($autoload)) {
-        error_log('XCM Quote: settings or vendor not found at ' . $base);
-        return false;
+    if (!file_exists($settingsFile)) {
+        error_log('XCM Quote: settings not found at ' . $settingsFile);
+        return ['ok' => false, 'message' => 'Server configuration missing.', 'saved' => false, 'emailed' => false];
     }
-
     if (!defined('APP_NAME')) {
         require_once $settingsFile;
     }
-    require_once $autoload;
 
+    $contact    = $input['contact']    ?? [];
+    $service    = $input['service']    ?? '';
+    $complexity = $input['complexity'] ?? '';
+    $addons     = $input['addons']     ?? [];
+    $tierData   = $input['tiers']      ?? [];
+    $subtotal   = (float) ($input['subtotal'] ?? 0);
+    $details    = trim($input['details'] ?? '');
+    $userName   = $contact['name'] ?? $contact['full_name'] ?? 'Visitor';
+    $userEmail  = filter_var($contact['email'] ?? $contact['email_address'] ?? '', FILTER_VALIDATE_EMAIL);
+
+    // ── 1. Save submission to JSON ────────────────────────────────────────
+    $saved = false;
+    $saveEnabled = defined('SAVE_SUBMISSIONS') ? SAVE_SUBMISSIONS : true;
+    if ($saveEnabled) {
+        $saved = pvSaveSubmission($base, [
+            'submitted_at' => date('c'),
+            'form_name'    => $form['name'] ?? 'Quote Form',
+            'contact'      => $contact,
+            'service'      => $service,
+            'complexity'   => $complexity,
+            'addons'       => $addons,
+            'tiers'        => $tierData,
+            'subtotal'     => $subtotal,
+            'details'      => $details,
+        ]);
+    }
+
+    // ── 2. Send emails ────────────────────────────────────────────────────
+    $emailed = false;
+    $sendEnabled = defined('SEND_EMAILS') ? SEND_EMAILS : true;
+    if ($sendEnabled && file_exists($autoload)) {
+        require_once $autoload;
+        $emailed = pvSendEmails($form, $input);
+    } elseif ($sendEnabled && !file_exists($autoload)) {
+        error_log('XCM Quote: vendor/autoload.php not found -- skipping email. Run composer install.');
+    }
+
+    // Build user-facing message
+    $parts = [];
+    if ($saved)   { $parts[] = 'Your submission has been recorded.'; }
+    if ($emailed && $userEmail) { $parts[] = 'A confirmation has been sent to your email.'; }
+    if (!$saved && !$emailed)   { $parts[] = 'Please take note of your estimate.'; }
+
+    return [
+        'ok'      => $saved || $emailed,
+        'message' => implode(' ', $parts),
+        'saved'   => $saved,
+        'emailed' => $emailed,
+    ];
+}
+
+/**
+ * Append a submission record to the submissions JSON file.
+ */
+function pvSaveSubmission(string $base, array $record): bool
+{
+    $file = defined('SUBMISSIONS_FILE')
+        ? SUBMISSIONS_FILE
+        : $base . '/data/submissions.json';
+
+    $dir = dirname($file);
+    if (!is_dir($dir)) {
+        if (!@mkdir($dir, 0755, true)) {
+            error_log('XCM Quote: cannot create data dir ' . $dir);
+            return false;
+        }
+    }
+
+    // Protect directory with .htaccess if not already present
+    $htaccess = $dir . '/.htaccess';
+    if (!file_exists($htaccess)) {
+        @file_put_contents($htaccess, "<IfModule mod_authz_core.c>\n    Require all denied\n</IfModule>\n<IfModule !mod_authz_core.c>\n    Order deny,allow\n    Deny from all\n</IfModule>\n");
+    }
+
+    // Read existing entries
+    $entries = [];
+    if (file_exists($file)) {
+        $raw = (string) file_get_contents($file);
+        $decoded = json_decode($raw, true);
+        if (is_array($decoded)) {
+            $entries = $decoded;
+        }
+    }
+
+    $entries[] = $record;
+
+    $written = file_put_contents($file, json_encode($entries, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    if ($written === false) {
+        error_log('XCM Quote: failed to write ' . $file);
+        return false;
+    }
+    return true;
+}
+
+/**
+ * Send themed HTML emails to admin and/or user via PHPMailer.
+ */
+function pvSendEmails(array $form, array $input): bool
+{
     $sty  = $form['style']    ?? [];
     $lang = $form['language']  ?? [];
     $primaryColor = $sty['primaryColor'] ?? '#244c47';
@@ -161,6 +260,14 @@ function pvSendEmails(array $form, array $input): bool
     $clientBody = $emailBody('Hello ' . $userName . ', thank you for your interest. Here is a summary of the estimate you requested:', true);
     $adminBody  = $emailBody('A new quote request has been submitted by ' . $userName . '. Details below:', false);
 
+    $fromAddr = defined('MAIL_FROM') ? MAIL_FROM : 'noreply@example.com';
+    $fromName = defined('MAIL_FROM_NAME') ? MAIL_FROM_NAME : $formName;
+    $adminTo  = defined('MAIL_TO') ? MAIL_TO : '';
+    $sendToAdmin = defined('SEND_EMAIL_TO_ADMIN') ? SEND_EMAIL_TO_ADMIN : true;
+    $sendToUser  = defined('SEND_EMAIL_TO_USER') ? SEND_EMAIL_TO_USER : true;
+
+    $anySent = false;
+
     try {
         $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
 
@@ -174,43 +281,48 @@ function pvSendEmails(array $form, array $input): bool
             $mail->SMTPSecure = ($mode === 'tls') ? \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS : \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
             $mail->Port       = SMTP_PORT;
         } else {
+            // Use PHP mail() -- requires a working sendmail/MTA on the server
             $mail->isMail();
         }
 
-        $fromAddr = defined('MAIL_FROM') ? MAIL_FROM : 'noreply@example.com';
-        $fromName = defined('MAIL_FROM_NAME') ? MAIL_FROM_NAME : $formName;
-        $adminTo  = defined('MAIL_TO') ? MAIL_TO : '';
-
         // 1. Send to business/developer
-        $adminSent = false;
-        if ($adminTo !== '') {
-            $mail->setFrom($fromAddr, $fromName);
-            $mail->addAddress($adminTo);
-            if ($userEmail) {
-                $mail->addReplyTo($userEmail, $userName);
+        if ($sendToAdmin && $adminTo !== '') {
+            try {
+                $mail->setFrom($fromAddr, $fromName);
+                $mail->addAddress($adminTo);
+                if ($userEmail) {
+                    $mail->addReplyTo($userEmail, $userName);
+                }
+                $mail->isHTML(true);
+                $mail->Subject = 'New Quote Request - ' . $userName;
+                $mail->Body    = $adminBody;
+                $mail->AltBody = strip_tags(str_replace(['<br>', '<br/>', '<br />'], "\n", $adminBody));
+                $mail->send();
+                $anySent = true;
+            } catch (\Exception $e) {
+                error_log('XCM Quote: admin email failed: ' . $e->getMessage());
             }
-            $mail->isHTML(true);
-            $mail->Subject = 'New Quote Request - ' . $userName;
-            $mail->Body    = $adminBody;
-            $mail->AltBody = strip_tags(str_replace(['<br>', '<br/>', '<br />'], "\n", $adminBody));
-            $mail->send();
-            $adminSent = true;
+            $mail->clearAddresses();
+            $mail->clearReplyTos();
         }
 
         // 2. Send to user (confirmation)
-        if ($userEmail) {
-            $mail->clearAddresses();
-            $mail->clearReplyTos();
-            $mail->setFrom($fromAddr, $fromName);
-            $mail->addAddress($userEmail, $userName);
-            $mail->isHTML(true);
-            $mail->Subject = 'Your Estimate - ' . htmlspecialchars($formName);
-            $mail->Body    = $clientBody;
-            $mail->AltBody = strip_tags(str_replace(['<br>', '<br/>', '<br />'], "\n", $clientBody));
-            $mail->send();
+        if ($sendToUser && $userEmail) {
+            try {
+                $mail->setFrom($fromAddr, $fromName);
+                $mail->addAddress($userEmail, $userName);
+                $mail->isHTML(true);
+                $mail->Subject = 'Your Estimate - ' . htmlspecialchars($formName);
+                $mail->Body    = $clientBody;
+                $mail->AltBody = strip_tags(str_replace(['<br>', '<br/>', '<br />'], "\n", $clientBody));
+                $mail->send();
+                $anySent = true;
+            } catch (\Exception $e) {
+                error_log('XCM Quote: user email failed: ' . $e->getMessage());
+            }
         }
 
-        return true;
+        return $anySent;
     } catch (\Exception $e) {
         error_log('XCM Quote Email Error: ' . $e->getMessage());
         return false;

@@ -161,6 +161,7 @@ func buildForm(f formMeta) error {
 		{"Copy preview renderer", func() error { return copyFile(filepath.Join(srcDir, "builder", "preview.php"), filepath.Join(deployDir, "src", "builder", "preview.php")) }},
 		{"Copy assets", func() error { return copyAssets(deployDir) }},
 		{"Copy mail config", func() error { return copyMailConfig(deployDir) }},
+		{"Prepare data directory", func() error { return prepareDataDir(deployDir) }},
 		{"Copy vendor (PHPMailer)", func() error { return copyDir("../vendor", filepath.Join(deployDir, "vendor")) }},
 		{"Generate .htaccess", func() error { return generateHtaccess(deployDir) }},
 		{"Generate service worker", func() error { return generateServiceWorker(deployDir) }},
@@ -188,6 +189,7 @@ func prepareOutputDir(deployDir string) error {
 		filepath.Join(deployDir, "assets", "js"),
 		filepath.Join(deployDir, "src", "builder"),
 		filepath.Join(deployDir, "config"),
+		filepath.Join(deployDir, "data"),
 	}
 	for _, d := range dirs {
 		if err := os.MkdirAll(d, 0755); err != nil {
@@ -258,6 +260,18 @@ func copyMailConfig(deployDir string) error {
 		}
 	}
 	return nil
+}
+
+func prepareDataDir(deployDir string) error {
+	htaccess := `<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order deny,allow
+    Deny from all
+</IfModule>
+`
+	return os.WriteFile(filepath.Join(deployDir, "data", ".htaccess"), []byte(htaccess), 0644)
 }
 
 func copyDir(src, dst string) error {

@@ -22,6 +22,15 @@ function dashFileRead(string $path): string
     return (string) file_get_contents($path);
 }
 
+function dashSlugify(string $name): string
+{
+    $s = strtolower(trim($name));
+    $s = preg_replace('/[^a-z0-9]+/', '_', $s);
+    $s = trim($s, '_');
+    if (strlen($s) > 50) $s = substr($s, 0, 50);
+    return $s ?: 'untitled';
+}
+
 // ── API endpoints (called by dashboard JS) ────────────────────────────────────
 
 $apiAction = $_GET['api'] ?? '';
@@ -78,14 +87,57 @@ if ($apiAction !== '') {
             echo json_encode(['ok' => true, 'output' => $add . "\n" . $out]);
             break;
 
-        // Run build tool
-        case 'build':
-            $buildDir = $root . '/build_this';
-            if (!is_dir($buildDir)) {
-                echo json_encode(['ok' => false, 'output' => 'build_this/ directory not found.']);
+        // List saved forms with build status
+        case 'build_list':
+            $formsDir = $root . '/data/forms';
+            $deployDir = $root . '/deploy';
+            $files = glob($formsDir . '/*.json') ?: [];
+            $forms = [];
+            foreach ($files as $f) {
+                $raw = @file_get_contents($f);
+                if (!$raw) continue;
+                $data = json_decode($raw, true);
+                if (!$data || empty($data['id'])) continue;
+                $name = $data['name'] ?? 'Untitled';
+                $slug = dashSlugify($name);
+                $buildDir = $deployDir . '/this_' . $slug;
+                $hasBuild = is_dir($buildDir) && file_exists($buildDir . '/index.php');
+                $buildTime = $hasBuild ? filemtime($buildDir . '/index.php') : 0;
+                $forms[] = [
+                    'id'         => $data['id'],
+                    'name'       => $name,
+                    'updated_at' => $data['updated_at'] ?? 0,
+                    'slug'       => $slug,
+                    'has_build'  => $hasBuild,
+                    'build_time' => $buildTime,
+                    'index'      => count($forms) + 1,
+                ];
+            }
+            usort($forms, fn($a, $b) => ($b['updated_at'] ?? 0) <=> ($a['updated_at'] ?? 0));
+            // Re-index after sort
+            foreach ($forms as $i => &$fm) { $fm['index'] = $i + 1; }
+            unset($fm);
+            echo json_encode($forms);
+            break;
+
+        // Build a specific form by its 1-based index
+        case 'build_form':
+            $idx = (int) ($_POST['index'] ?? 0);
+            if ($idx < 1) {
+                echo json_encode(['ok' => false, 'output' => 'Invalid form index.']);
                 break;
             }
-            $out = dashRun('cd ' . escapeshellarg($buildDir) . ' && go run main.go');
+            $buildDir = $root . '/build_this';
+            $binary = $buildDir . '/xcm-build-this';
+            if (!file_exists($binary)) {
+                // Try to compile
+                dashRun('cd ' . escapeshellarg($buildDir) . ' && go build -o xcm-build-this main.go');
+                if (!file_exists($binary)) {
+                    echo json_encode(['ok' => false, 'output' => 'Build binary not found and could not compile.']);
+                    break;
+                }
+            }
+            $out = dashRun('cd ' . escapeshellarg($buildDir) . ' && echo ' . escapeshellarg((string)$idx) . ' | ./xcm-build-this');
             echo json_encode(['ok' => true, 'output' => $out]);
             break;
 
@@ -529,16 +581,34 @@ if (preg_match('#github\.com[:/](.+?)(?:\.git)?$#', $remote, $m)) {
 <div id="panel-build" class="tab-panel">
 <div class="panel-inner">
     <div class="row-gap">
-        <p class="sec-title">xcm-build-this</p>
-        <p style="font-size:0.85rem; color:#556b69; margin-bottom:1rem;">
-            Runs the Go build tool in <code>build_this/</code>. Output is placed in <code>deploy/this/</code>.
+        <p class="sec-title">Saved Forms</p>
+        <p style="font-size:0.82rem; color:#556b69; margin-bottom:1rem;">
+            Select a form below to compile a self-contained deployable package into <code>deploy/this_&lt;name&gt;/</code>.
         </p>
-        <div class="btn-row">
-            <button class="btn btn-primary" id="build-btn" onclick="runBuild()">Run Build</button>
+        <div id="build-forms-list" style="margin-bottom:1rem;">
+            <p style="color:#556b69;font-size:0.85rem;font-style:italic;">Loading forms...</p>
         </div>
+        <div class="btn-row">
+            <button class="btn btn-secondary" onclick="loadBuildForms()">Refresh List</button>
+        </div>
+    </div>
+    <div class="row-gap">
+        <p class="sec-title">Build Output</p>
         <div id="build-out" class="terminal empty">No build run yet.</div>
     </div>
 </div>
+</div>
+
+<!-- Build confirm overlay -->
+<div id="build-confirm-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:none;align-items:center;justify-content:center;">
+    <div style="background:var(--dash-bg);max-width:420px;width:90%;padding:1.5rem;border:2px solid var(--dash-primary);">
+        <p style="font-size:0.9rem;font-weight:700;color:var(--dash-text);margin-bottom:0.5rem;" id="build-confirm-title"></p>
+        <p style="font-size:0.82rem;color:var(--dash-muted);margin-bottom:1.2rem;line-height:1.5;" id="build-confirm-msg"></p>
+        <div class="btn-row" style="margin-bottom:0;">
+            <button class="btn btn-secondary" onclick="closeBuildConfirm()">Cancel</button>
+            <button class="btn btn-primary" id="build-confirm-yes">Yes, Overwrite</button>
+        </div>
+    </div>
 </div>
 
 <!-- NOTES --------------------------------------------------------------------->
@@ -872,16 +942,108 @@ if (preg_match('#github\.com[:/](.+?)(?:\.git)?$#', $remote, $m)) {
     };
 
     // ── build ─────────────────────────────────────────────────────────────────
-    window.runBuild = function () {
-        var out = document.getElementById('build-out');
-        var btn = document.getElementById('build-btn');
-        term(out, 'Building...', false);
-        if (btn) { btn.disabled = true; }
-        api('build', null, function (d) {
-            term(out, d.output || d.error || JSON.stringify(d), false);
-            if (btn) { btn.disabled = false; }
+    var buildFormsCache = [];
+
+    window.loadBuildForms = function () {
+        var list = document.getElementById('build-forms-list');
+        if (!list) return;
+        list.innerHTML = '<p style="color:#556b69;font-size:0.85rem;font-style:italic;">Loading forms...</p>';
+        api('build_list', null, function (forms) {
+            buildFormsCache = forms;
+            if (!Array.isArray(forms) || forms.length === 0) {
+                list.innerHTML = '<p style="color:#556b69;font-size:0.85rem;font-style:italic;">No saved forms found. Open the Form Builder and save a form first.</p>';
+                return;
+            }
+            list.innerHTML = '';
+            forms.forEach(function (f) {
+                var row = document.createElement('div');
+                row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:0.75rem;padding:0.65rem 0.85rem;border:1px solid var(--dash-border);margin-bottom:0.5rem;flex-wrap:wrap;background:var(--dash-bg);';
+                var left = document.createElement('div');
+                var nameEl = document.createElement('div');
+                nameEl.style.cssText = 'font-size:0.88rem;font-weight:600;color:var(--dash-text);';
+                nameEl.textContent = f.name;
+                left.appendChild(nameEl);
+                var metaEl = document.createElement('div');
+                metaEl.style.cssText = 'font-size:0.72rem;color:var(--dash-muted);font-family:monospace;margin-top:0.15rem;';
+                var updated = f.updated_at ? new Date(f.updated_at * 1000).toLocaleString() : 'unknown';
+                var metaText = 'Updated: ' + updated;
+                if (f.has_build) {
+                    var built = new Date(f.build_time * 1000).toLocaleString();
+                    metaText += '  |  Built: ' + built;
+                }
+                metaEl.textContent = metaText;
+                left.appendChild(metaEl);
+                var right = document.createElement('div');
+                right.style.cssText = 'display:flex;align-items:center;gap:0.5rem;';
+                if (f.has_build) {
+                    var badge = document.createElement('span');
+                    badge.className = 'badge badge-ok';
+                    badge.textContent = 'Built';
+                    right.appendChild(badge);
+                }
+                var btn = document.createElement('button');
+                btn.className = 'btn btn-primary';
+                btn.textContent = f.has_build ? 'Rebuild' : 'Build';
+                btn.setAttribute('data-index', f.index);
+                btn.setAttribute('data-name', f.name);
+                btn.setAttribute('data-has-build', f.has_build ? '1' : '0');
+                btn.onclick = function () { handleBuildClick(this); };
+                right.appendChild(btn);
+                row.appendChild(left);
+                row.appendChild(right);
+                list.appendChild(row);
+            });
         });
     };
+
+    function handleBuildClick(btn) {
+        var idx = btn.getAttribute('data-index');
+        var name = btn.getAttribute('data-name');
+        var hasBuild = btn.getAttribute('data-has-build') === '1';
+        if (hasBuild) {
+            showBuildConfirm(name, idx);
+        } else {
+            executeBuild(idx, name);
+        }
+    }
+
+    function showBuildConfirm(name, idx) {
+        var overlay = document.getElementById('build-confirm-overlay');
+        document.getElementById('build-confirm-title').textContent = 'Existing build detected';
+        document.getElementById('build-confirm-msg').textContent = '"' + name + '" already has a build in the deploy directory. Building again will overwrite the existing files. Do you want to continue?';
+        var yesBtn = document.getElementById('build-confirm-yes');
+        yesBtn.onclick = function () {
+            closeBuildConfirm();
+            executeBuild(idx, name);
+        };
+        overlay.style.display = 'flex';
+    }
+
+    window.closeBuildConfirm = function () {
+        document.getElementById('build-confirm-overlay').style.display = 'none';
+    };
+
+    function executeBuild(idx, name) {
+        var out = document.getElementById('build-out');
+        term(out, 'Building: ' + name + '...', false);
+        var fd = new FormData();
+        fd.append('index', idx);
+        api('build_form', fd, function (d) {
+            term(out, d.output || d.error || JSON.stringify(d), false);
+            loadBuildForms();
+        });
+    }
+
+    // Auto-load build forms when Build tab is opened
+    var buildLoaded = false;
+    document.querySelectorAll('.tab-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            if (btn.getAttribute('data-panel') === 'panel-build' && !buildLoaded) {
+                buildLoaded = true;
+                setTimeout(loadBuildForms, 100);
+            }
+        });
+    });
 
     // ── notes ─────────────────────────────────────────────────────────────────
     window.loadNotes = function () {

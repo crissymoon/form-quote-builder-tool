@@ -148,39 +148,32 @@ if (!$isDemo && !$isStepNav && !$isPostAction) {
     exit;
 }
 
-// Demo mode: renders a pre-populated result view for visual testing
+// Demo mode: renders through the builder preview renderer with pre-populated
+// selections so it matches the live form output exactly.
 if (isset($_GET['demo'])) {
-    $_SESSION['last_quote'] = [
-        'ref_id'     => 'XCM-DEMO-EXAMPLE',
-        'created_at' => time(),
-        'expires_at' => time() + (14 * 86400),
-        'status'     => 'active',
-        'quote_data' => [
-            'service_type'    => 'ai_web_app',
-            'project_name'    => 'Example AI-Driven Web Application',
-            'complexity'      => 'complex',
-            'addons'          => ['seo_advanced', 'api_integration', 'automation'],
-            'contact_name'    => 'Jane Smith',
-            'contact_email'   => 'jane@example.com',
-            'contact_company' => 'Acme Corp',
-            'timeline'        => '3-6 months',
-        ],
-        'estimate'   => [
-            'base'        => 9500,
-            'multiplier'  => 2.0,
-            'addon_total' => 4900,
-            'subtotal'    => 23900,
-            'range_low'   => 21510,
-            'range_high'  => 28680,
-            'currency'    => 'USD',
-        ],
+    $form = load_latest_builder_form() ?? default_builder_form();
+    $isDemoMode = true;
+
+    // Build demo selections based on what the form actually contains.
+    // Pick the 5th service if available (ai_web_app in default), else last.
+    $demoServiceIdx    = min(4, max(0, count($form['services'] ?? []) - 1));
+    // Pick the 3rd complexity if available (complex in default), else last.
+    $demoComplexityIdx = min(2, max(0, count($form['complexity'] ?? []) - 1));
+    // Pick a few addons: indices 1, 6, 7 if they exist.
+    $addonCount = count($form['addons'] ?? []);
+    $demoAddonIndices  = array_filter([1, 6, 7], function($i) use ($addonCount) { return $i < $addonCount; });
+    if (empty($demoAddonIndices) && $addonCount > 0) { $demoAddonIndices = [0]; }
+
+    // Contact demo data
+    $demoContact = [
+        'name'     => 'Jane Smith',
+        'email'    => 'jane@example.com',
+        'company'  => 'Acme Corp',
+        'timeline' => 'Within 3 months',
     ];
-    $isResult    = true;
-    $step        = 0;
-    ob_start();
-    require APP_ROOT . '/templates/result.php';
-    $pageContent = ob_get_clean();
-    require APP_ROOT . '/templates/layout.php';
+    $demoDetails = 'This is a demo submission showing how the completed estimate looks.';
+
+    require APP_ROOT . '/builder/preview.php';
     exit;
 }
 

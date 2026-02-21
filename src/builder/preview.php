@@ -53,6 +53,24 @@ $resultDescT  = htmlspecialchars($lang['resultDesc']    ?? 'Based on your select
 $currency     = htmlspecialchars($lang['currency'] ?? '$');
 $showBreak    = ($form['showBreakdown'] ?? true) ? 'true' : 'false';
 
+$videoUrl       = trim($form['videoUrl'] ?? '');
+$introHeading   = htmlspecialchars($lang['introHeading']    ?? 'Welcome');
+$introText      = htmlspecialchars($lang['introText']       ?? '');
+$introButton    = htmlspecialchars($lang['introButtonLabel'] ?? 'Get Started');
+$hasIntro       = ($videoUrl !== '' || ($lang['introHeading'] ?? '') !== '' || ($lang['introText'] ?? '') !== '');
+
+// Convert YouTube / Vimeo URLs to embeddable form
+$embedUrl = '';
+if ($videoUrl !== '') {
+    if (preg_match('/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w\-]+)/', $videoUrl, $m)) {
+        $embedUrl = 'https://www.youtube.com/embed/' . $m[1];
+    } elseif (preg_match('/vimeo\.com\/(\d+)/', $videoUrl, $m)) {
+        $embedUrl = 'https://player.vimeo.com/video/' . $m[1];
+    } else {
+        $embedUrl = $videoUrl; // assume already an embed URL
+    }
+}
+
 $services   = $form['services']   ?? [];
 $complexity = $form['complexity']  ?? [];
 $addons     = $form['addons']      ?? [];
@@ -65,6 +83,7 @@ $totalSteps = 4;
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title><?= $isBuilderPreview ? 'Preview: ' : '' ?><?= htmlspecialchars($form['name'] ?? 'Quote Form') ?></title>
+<link rel="icon" type="image/png" href="/assets/favicon.png">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { font-size: <?= $fontSize ?>px; font-family: <?= $fontFamily ?>; color: <?= $textColor ?>; background: <?= $bgColor ?>; }
@@ -134,6 +153,21 @@ body { min-height: 100vh; display: flex; flex-direction: column; }
 .pv-breakdown-label { flex: 1; }
 .pv-breakdown-val { font-weight: 700; color: <?= $primaryColor ?>; }
 .pv-breakdown-total { display: flex; justify-content: space-between; padding: 0.6rem 0; margin-top: 0.3rem; border-top: 2px solid <?= $primaryColor ?>; font-weight: 700; font-size: 0.95rem; color: <?= $primaryColor ?>; }
+
+/* intro / video */
+.pv-intro-block { background: #fff; border: 1px solid <?= $accentColor ?>60; padding: 2.5rem 2rem; text-align: center; }
+.pv-intro-heading { font-size: 1.5rem; font-weight: 700; color: <?= $textColor ?>; margin-bottom: 0.5rem; }
+.pv-intro-text { font-size: 0.92rem; color: <?= $accentColor ?>; margin-bottom: 1.5rem; line-height: 1.5; }
+.pv-video-wrap { position: relative; width: 100%; padding-bottom: 56.25%; margin-bottom: 1.5rem; background: <?= $textColor ?>10; }
+.pv-video-wrap iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+.pv-intro-btn { display: inline-block; padding: 0.75rem 2rem; font-size: 1rem; font-family: inherit; font-weight: 700; cursor: pointer; border: 2px solid <?= $primaryColor ?>; background: <?= $primaryColor ?>; color: <?= $headerText ?>; letter-spacing: 0.02em; }
+.pv-intro-btn:hover { opacity: 0.85; }
+
+/* help system */
+.pv-help-toggle { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; font-size: 11px; font-weight: 700; color: <?= $accentColor ?>; border: 1px solid <?= $accentColor ?>60; background: <?= $bgColor ?>; cursor: pointer; flex-shrink: 0; margin-left: 0.35rem; vertical-align: middle; font-family: inherit; line-height: 1; padding: 0; }
+.pv-help-toggle:hover { background: <?= $primaryColor ?>15; border-color: <?= $primaryColor ?>; color: <?= $primaryColor ?>; }
+.pv-help-body { display: none; padding: 0.6rem 0.8rem; margin-top: 0.35rem; font-size: 0.78rem; line-height: 1.5; color: <?= $textColor ?>; background: <?= $primaryColor ?>08; border-left: 3px solid <?= $accentColor ?>; }
+.pv-help-body.open { display: block; }
 </style>
 </head>
 <body>
@@ -153,18 +187,37 @@ body { min-height: 100vh; display: flex; flex-direction: column; }
 <main class="pv-main">
 <div class="pv-container" id="pv-app">
 
+<?php if ($hasIntro): ?>
+<!-- INTRO -->
+<div id="pv-intro">
+    <div class="pv-intro-block">
+        <?php if ($introHeading): ?><h2 class="pv-intro-heading"><?= $introHeading ?></h2><?php endif; ?>
+        <?php if ($introText): ?><p class="pv-intro-text"><?= $introText ?></p><?php endif; ?>
+        <?php if ($embedUrl): ?>
+        <div class="pv-video-wrap">
+            <iframe src="<?= htmlspecialchars($embedUrl) ?>" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        </div>
+        <?php endif; ?>
+        <button class="pv-intro-btn" onclick="pvDismissIntro()"><?= $introButton ?></button>
+    </div>
+</div>
+<?php endif; ?>
+
 <!-- STEP 1: Services -->
-<div class="pv-step" id="pv-step-0">
+<div class="pv-step" id="pv-step-0"<?php if ($hasIntro): ?> style="display:none;"<?php endif; ?>>
     <div class="pv-progress-wrap"><div class="pv-progress" style="width:25%"></div></div>
     <p class="pv-step-ind">Step 1 of <?= $totalSteps ?></p>
     <div class="pv-step-block">
         <h2 class="pv-step-title"><?= $svcTitle ?></h2>
         <p class="pv-step-desc"><?= $svcDesc ?></p>
         <div class="pv-options">
-        <?php foreach ($services as $svc): ?>
+        <?php foreach ($services as $si => $svc): ?>
             <label class="pv-radio-opt">
                 <input type="radio" name="pv-service" data-price="<?= (float)($svc['price'] ?? 0) ?>" data-label="<?= htmlspecialchars($svc['label'] ?? '') ?>">
-                <span class="pv-opt-info"><span class="pv-opt-label"><?= htmlspecialchars($svc['label'] ?? '') ?></span></span>
+                <span class="pv-opt-info">
+                    <span class="pv-opt-label"><?= htmlspecialchars($svc['label'] ?? '') ?><?php if (!empty($svc['help'])): ?><button type="button" class="pv-help-toggle" onclick="event.preventDefault();pvToggleHelp('svc-<?= $si ?>')">?</button><?php endif; ?></span>
+                    <?php if (!empty($svc['help'])): ?><div class="pv-help-body" id="pv-help-svc-<?= $si ?>"><?= htmlspecialchars($svc['help']) ?></div><?php endif; ?>
+                </span>
                 <span class="pv-opt-cost"><?= $currency . number_format((float)($svc['price'] ?? 0), 0) ?></span>
             </label>
         <?php endforeach; ?>
@@ -184,12 +237,13 @@ body { min-height: 100vh; display: flex; flex-direction: column; }
         <h2 class="pv-step-title"><?= $cplxTitle ?></h2>
         <p class="pv-step-desc"><?= $cplxDesc ?></p>
         <div class="pv-options">
-        <?php foreach ($complexity as $c): ?>
+        <?php foreach ($complexity as $ci => $c): ?>
             <label class="pv-radio-opt">
                 <input type="radio" name="pv-complexity" data-multiplier="<?= (float)($c['multiplier'] ?? 1) ?>" data-label="<?= htmlspecialchars($c['label'] ?? '') ?>">
                 <span class="pv-opt-info">
-                    <span class="pv-opt-label"><?= htmlspecialchars($c['label'] ?? '') ?></span>
+                    <span class="pv-opt-label"><?= htmlspecialchars($c['label'] ?? '') ?><?php if (!empty($c['help'])): ?><button type="button" class="pv-help-toggle" onclick="event.preventDefault();pvToggleHelp('cplx-<?= $ci ?>')">?</button><?php endif; ?></span>
                     <?php if (!empty($c['description'])): ?><div class="pv-opt-sub"><?= htmlspecialchars($c['description']) ?></div><?php endif; ?>
+                    <?php if (!empty($c['help'])): ?><div class="pv-help-body" id="pv-help-cplx-<?= $ci ?>"><?= htmlspecialchars($c['help']) ?></div><?php endif; ?>
                 </span>
                 <span class="pv-opt-cost"><?= (float)($c['multiplier'] ?? 1) ?>x</span>
             </label>
@@ -214,10 +268,13 @@ body { min-height: 100vh; display: flex; flex-direction: column; }
         <?php if (empty($addons)): ?>
             <p style="color:<?= $accentColor ?>;font-size:0.88rem;">No add-on services available.</p>
         <?php else: ?>
-        <?php foreach ($addons as $a): ?>
+        <?php foreach ($addons as $ai => $a): ?>
             <label class="pv-check-opt">
                 <input type="checkbox" name="pv-addon" data-price="<?= (float)($a['price'] ?? 0) ?>" data-label="<?= htmlspecialchars($a['label'] ?? '') ?>">
-                <span class="pv-opt-info"><span class="pv-opt-label"><?= htmlspecialchars($a['label'] ?? '') ?></span></span>
+                <span class="pv-opt-info">
+                    <span class="pv-opt-label"><?= htmlspecialchars($a['label'] ?? '') ?><?php if (!empty($a['help'])): ?><button type="button" class="pv-help-toggle" onclick="event.preventDefault();pvToggleHelp('addon-<?= $ai ?>')">?</button><?php endif; ?></span>
+                    <?php if (!empty($a['help'])): ?><div class="pv-help-body" id="pv-help-addon-<?= $ai ?>"><?= htmlspecialchars($a['help']) ?></div><?php endif; ?>
+                </span>
                 <span class="pv-opt-cost">+<?= $currency . number_format((float)($a['price'] ?? 0), 0) ?></span>
             </label>
         <?php endforeach; ?>
@@ -283,8 +340,11 @@ body { min-height: 100vh; display: flex; flex-direction: column; }
     var resultHead  = <?= json_encode($resultHead) ?>;
     var resultDescT = <?= json_encode($resultDescT) ?>;
     var showBreak   = <?= $showBreak ?>;
+    var hasIntro    = <?= $hasIntro ? 'true' : 'false' ?>;
 
     function show(n) {
+        var intro = document.getElementById('pv-intro');
+        if (intro) intro.style.display = 'none';
         for (var i = 0; i < total; i++) {
             var el = document.getElementById('pv-step-' + i);
             if (el) el.style.display = i === n ? '' : 'none';
@@ -392,7 +452,29 @@ body { min-height: 100vh; display: flex; flex-direction: column; }
         document.querySelectorAll('.pv-input, .pv-select').forEach(function(el) { el.value = ''; });
         document.querySelectorAll('select.pv-select').forEach(function(el) { el.selectedIndex = 0; });
         document.querySelectorAll('input[type=radio], input[type=checkbox]').forEach(function(el) { el.checked = false; });
+        document.querySelectorAll('.pv-help-body').forEach(function(el) { el.classList.remove('open'); });
+        if (hasIntro) {
+            for (var i = 0; i < total; i++) {
+                var el = document.getElementById('pv-step-' + i);
+                if (el) el.style.display = 'none';
+            }
+            document.getElementById('pv-done').style.display = 'none';
+            var intro = document.getElementById('pv-intro');
+            if (intro) intro.style.display = '';
+        } else {
+            show(0);
+        }
+    };
+
+    window.pvDismissIntro = function() {
+        var intro = document.getElementById('pv-intro');
+        if (intro) intro.style.display = 'none';
         show(0);
+    };
+
+    window.pvToggleHelp = function(id) {
+        var el = document.getElementById('pv-help-' + id);
+        if (el) el.classList.toggle('open');
     };
 }());
 </script>

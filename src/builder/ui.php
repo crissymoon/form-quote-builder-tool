@@ -15,6 +15,7 @@ $initJson = $initForm ? json_encode($initForm, JSON_HEX_TAG | JSON_HEX_APOS | JS
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quote Form Builder</title>
+<link rel="icon" type="image/png" href="/assets/favicon.png">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -131,6 +132,8 @@ a:hover { color: var(--c-accent); }
 #live-preview .lp-dot { width: 7px; height: 7px; background: #ccc; }
 #live-preview .lp-dot.active { background: var(--lp-primary, #244c47); }
 #live-preview .lp-footer { background: var(--lp-header-bg, #244c47); color: var(--lp-header-text, #eaf5f4); padding: 0.75rem 1rem; text-align: center; font-size: 0.72rem; opacity: 0.7; border-top: 2px solid var(--lp-primary, #244c47); }
+#live-preview .lp-help-toggle { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; font-size: 9px; font-weight: 700; color: var(--lp-accent, #459289); border: 1px solid var(--lp-accent, #459289); background: var(--lp-bg, #fcfdfd); cursor: default; flex-shrink: 0; margin-left: 0.25rem; vertical-align: middle; font-family: inherit; line-height: 1; padding: 0; }
+#live-preview .lp-help-body { padding: 0.4rem 0.5rem; margin-top: 0.2rem; font-size: 0.65rem; line-height: 1.4; color: var(--lp-text, #182523); background: color-mix(in srgb, var(--lp-primary, #244c47) 5%, transparent); border-left: 2px solid var(--lp-accent, #459289); }
 
 /* right sidebar */
 .sidebar-right { width: 280px; flex-shrink: 0; background: #f6faf9; border-left: 1px solid var(--c-border); overflow-y: auto; display: flex; flex-direction: column; }
@@ -170,6 +173,7 @@ a:hover { color: var(--c-accent); }
 .edit-item input.ei-price { width: 75px; text-align: right; }
 .edit-item input.ei-mult { width: 55px; text-align: right; }
 .edit-item input.ei-desc { width: 100%; margin-top: 0.25rem; font-size: 0.72rem; color: var(--c-muted); }
+.edit-item textarea.ei-desc { width: 100%; margin-top: 0.25rem; font-size: 0.72rem; color: var(--c-muted); padding: 0.3rem 0.4rem; border: 1px solid var(--c-border); background: #fff; font-family: inherit; resize: vertical; min-height: 36px; }
 .edit-item select.ei-type { padding: 0.3rem 0.35rem; border: 1px solid var(--c-border); font-size: 0.75rem; background: #fff; color: var(--c-text); }
 .opt-rm-btn { background: none; border: none; cursor: pointer; color: var(--c-muted); font-size: 0.9rem; padding: 0 0.2rem; }
 .opt-rm-btn:hover { color: var(--c-red); }
@@ -245,6 +249,7 @@ a:hover { color: var(--c-accent); }
             <button class="props-tab active" id="ptab-edit" onclick="showPropTab('edit')">Edit</button>
             <button class="props-tab" id="ptab-style" onclick="showPropTab('style')">Style</button>
             <button class="props-tab" id="ptab-lang" onclick="showPropTab('lang')">Language</button>
+            <button class="props-tab" id="ptab-content" onclick="showPropTab('content')">Content</button>
             <button class="props-tab" id="ptab-tiers" onclick="showPropTab('tiers')">Tiers</button>
         </div>
 
@@ -324,6 +329,18 @@ a:hover { color: var(--c-accent); }
             <div class="prop-row"><label class="prop-label">Heading</label><input type="text" class="prop-input" id="lang-result-heading" oninput="langChanged()"></div>
             <div class="prop-row"><label class="prop-label">Description</label><textarea class="prop-textarea" id="lang-result-desc" oninput="langChanged()"></textarea></div>
             <div class="prop-row"><label class="prop-label">Currency symbol</label><input type="text" class="prop-input" id="lang-currency" maxlength="4" style="width:60px;" oninput="langChanged()"></div>
+        </div>
+
+        <!-- Content panel (video / intro) -->
+        <div class="props-panel" id="ppanel-content">
+            <p class="prop-section-title">Intro / Landing</p>
+            <p style="font-size:0.72rem;color:var(--c-muted);margin-bottom:0.6rem;">An optional intro screen shown before the first step. Leave the video URL empty to skip the video embed.</p>
+            <div class="prop-row"><label class="prop-label">Video URL</label><input type="text" class="prop-input" id="content-video-url" placeholder="YouTube, Vimeo, or embed URL" oninput="contentChanged()"></div>
+            <div class="prop-row"><label class="prop-label">Intro heading</label><input type="text" class="prop-input" id="content-intro-heading" oninput="contentChanged()"></div>
+            <div class="prop-row"><label class="prop-label">Intro text</label><textarea class="prop-textarea" id="content-intro-text" oninput="contentChanged()"></textarea></div>
+            <div class="prop-row"><label class="prop-label">Button label</label><input type="text" class="prop-input" id="content-intro-btn" oninput="contentChanged()"></div>
+            <p class="prop-section-title">Help Descriptions</p>
+            <p style="font-size:0.72rem;color:var(--c-muted);margin-bottom:0.6rem;">Help text appears as a "?" icon next to each option. Edit help text for individual items in the Edit tab.</p>
         </div>
 
         <!-- Tiers panel -->
@@ -471,6 +488,7 @@ function loadForm(f) {
     updatePreviewStyles();
     populateStylePanel();
     populateLangPanel();
+    populateContentPanel();
     populateTiersPanel();
     document.getElementById('toolbar-form-name').textContent = f.name || 'Untitled';
     loadFormsList();
@@ -602,7 +620,9 @@ function renderServicesEdit(el) {
             '<input type="text" class="ei-label" value="' + esc(svc.label||'') + '" placeholder="Service name" oninput="updateItem(\'services\',' + i + ',\'label\',this.value)">' +
             '<input type="number" class="ei-price" value="' + (svc.price||0) + '" placeholder="Price" oninput="updateItem(\'services\',' + i + ',\'price\',parseFloat(this.value)||0)">' +
             '<button class="opt-rm-btn" onclick="removeItem(\'services\',' + i + ')">&#10005;</button>' +
-        '</div></div>';
+        '</div>' +
+        '<textarea class="ei-desc" placeholder="Help text (shown via ? icon)" oninput="updateItem(\'services\',' + i + ',\'help\',this.value)">' + esc(svc.help||'') + '</textarea>' +
+        '</div>';
     });
     html += '<button class="opt-add-btn" onclick="addItem(\'services\')">+ Add Service</button>';
     el.innerHTML = html;
@@ -618,6 +638,7 @@ function renderComplexityEdit(el) {
             '<button class="opt-rm-btn" onclick="removeItem(\'complexity\',' + i + ')">&#10005;</button>' +
         '</div>' +
         '<input type="text" class="ei-desc" value="' + esc(c.description||'') + '" placeholder="Description" oninput="updateItem(\'complexity\',' + i + ',\'description\',this.value)">' +
+        '<textarea class="ei-desc" placeholder="Help text (shown via ? icon)" oninput="updateItem(\'complexity\',' + i + ',\'help\',this.value)">' + esc(c.help||'') + '</textarea>' +
         '</div>';
     });
     html += '<button class="opt-add-btn" onclick="addItem(\'complexity\')">+ Add Level</button>';
@@ -633,7 +654,9 @@ function renderAddonsEdit(el) {
             '<input type="text" class="ei-label" value="' + esc(a.label||'') + '" placeholder="Add-on name" oninput="updateItem(\'addons\',' + i + ',\'label\',this.value)">' +
             '<input type="number" class="ei-price" value="' + (a.price||0) + '" placeholder="Price" oninput="updateItem(\'addons\',' + i + ',\'price\',parseFloat(this.value)||0)">' +
             '<button class="opt-rm-btn" onclick="removeItem(\'addons\',' + i + ')">&#10005;</button>' +
-        '</div></div>';
+        '</div>' +
+        '<textarea class="ei-desc" placeholder="Help text (shown via ? icon)" oninput="updateItem(\'addons\',' + i + ',\'help\',this.value)">' + esc(a.help||'') + '</textarea>' +
+        '</div>';
     });
     html += '<button class="opt-add-btn" onclick="addItem(\'addons\')">+ Add Add-On</button>';
     el.innerHTML = html;
@@ -677,9 +700,9 @@ function renderContactEdit(el) {
 window.addItem = function(section) {
     if (!form) return;
     var defaults = {
-        services:   { key: 's_' + Date.now(), label: 'New Service', price: 0 },
-        complexity: { key: 'c_' + Date.now(), label: 'New Level', description: '', multiplier: 1.0 },
-        addons:     { key: 'a_' + Date.now(), label: 'New Add-On', price: 0 },
+        services:   { key: 's_' + Date.now(), label: 'New Service', price: 0, help: '' },
+        complexity: { key: 'c_' + Date.now(), label: 'New Level', description: '', multiplier: 1.0, help: '' },
+        addons:     { key: 'a_' + Date.now(), label: 'New Add-On', price: 0, help: '' },
         contact:    { key: 'f_' + Date.now(), label: 'New Field', type: 'text', required: false }
     };
     if (!form[section]) form[section] = [];
@@ -755,8 +778,11 @@ function renderLivePreview() {
         html += '<div class="lp-options">';
         (form.services || []).forEach(function(svc) {
             html += '<label class="lp-radio-opt"><input type="radio" name="lp-svc" disabled>' +
-                '<span class="lp-opt-label">' + esc(svc.label) + '</span>' +
-                '<span class="lp-opt-cost">' + fmtCost(svc.price, cur) + '</span></label>';
+                '<div style="flex:1;"><div class="lp-opt-label">' + esc(svc.label);
+            if (svc.help) html += '<span class="lp-help-toggle">?</span>';
+            html += '</div>';
+            if (svc.help) html += '<div class="lp-help-body">' + esc(svc.help) + '</div>';
+            html += '</div><span class="lp-opt-cost">' + fmtCost(svc.price, cur) + '</span></label>';
         });
         html += '</div>';
     }
@@ -767,9 +793,12 @@ function renderLivePreview() {
         html += '<div class="lp-options">';
         (form.complexity || []).forEach(function(c) {
             html += '<label class="lp-radio-opt"><input type="radio" name="lp-cplx" disabled>' +
-                '<div style="flex:1;"><div class="lp-opt-label">' + esc(c.label) + '</div>' +
-                (c.description ? '<div class="lp-opt-sub">' + esc(c.description) + '</div>' : '') +
-                '</div><span class="lp-opt-cost">' + c.multiplier + 'x</span></label>';
+                '<div style="flex:1;"><div class="lp-opt-label">' + esc(c.label);
+            if (c.help) html += '<span class="lp-help-toggle">?</span>';
+            html += '</div>';
+            if (c.description) html += '<div class="lp-opt-sub">' + esc(c.description) + '</div>';
+            if (c.help) html += '<div class="lp-help-body">' + esc(c.help) + '</div>';
+            html += '</div><span class="lp-opt-cost">' + c.multiplier + 'x</span></label>';
         });
         html += '</div>';
     }
@@ -780,8 +809,11 @@ function renderLivePreview() {
         html += '<div class="lp-options">';
         (form.addons || []).forEach(function(a) {
             html += '<label class="lp-check-opt"><input type="checkbox" disabled>' +
-                '<span class="lp-opt-label">' + esc(a.label) + '</span>' +
-                '<span class="lp-opt-cost">+' + fmtCost(a.price, cur) + '</span></label>';
+                '<div style="flex:1;"><div class="lp-opt-label">' + esc(a.label);
+            if (a.help) html += '<span class="lp-help-toggle">?</span>';
+            html += '</div>';
+            if (a.help) html += '<div class="lp-help-body">' + esc(a.help) + '</div>';
+            html += '</div><span class="lp-opt-cost">+' + fmtCost(a.price, cur) + '</span></label>';
         });
         if (!(form.addons || []).length) {
             html += '<p style="font-size:0.82rem;color:var(--lp-accent);padding:0.5rem 0;">No add-ons configured.</p>';
@@ -1048,6 +1080,24 @@ window.langChanged = function() {
     renderLivePreview();
 };
 
+// -- content panel (video / intro) --
+function populateContentPanel() {
+    if (!form) return;
+    setVal('content-video-url',     form.videoUrl || '');
+    setVal('content-intro-heading', (form.language || {}).introHeading     || '');
+    setVal('content-intro-text',    (form.language || {}).introText        || '');
+    setVal('content-intro-btn',     (form.language || {}).introButtonLabel || '');
+}
+
+window.contentChanged = function() {
+    if (!form) return;
+    form.videoUrl = getVal('content-video-url');
+    if (!form.language) form.language = {};
+    form.language.introHeading     = getVal('content-intro-heading');
+    form.language.introText        = getVal('content-intro-text');
+    form.language.introButtonLabel = getVal('content-intro-btn');
+};
+
 // -- tiers panel --
 function populateTiersPanel() {
     if (!form) return;
@@ -1097,7 +1147,7 @@ window.tiersMetaChanged = function() {
 
 // -- tab switch --
 window.showPropTab = function(name) {
-    ['edit','style','lang','tiers'].forEach(function(n) {
+    ['edit','style','lang','content','tiers'].forEach(function(n) {
         document.getElementById('ptab-' + n).classList.toggle('active', n === name);
         document.getElementById('ppanel-' + n).classList.toggle('active', n === name);
     });

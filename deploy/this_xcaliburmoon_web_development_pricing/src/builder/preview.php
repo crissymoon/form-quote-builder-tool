@@ -10,9 +10,10 @@ declare(strict_types=1);
  * rendered as the live public-facing form.
  */
 $isBuilderPreview = $isBuilderPreview ?? false;
+$isDemoMode       = $isDemoMode       ?? false;
 
 // ── Handle form submission (AJAX POST) ────────────────────────────────────────
-if (!$isBuilderPreview && $_SERVER['REQUEST_METHOD'] === 'POST') {
+if (!$isBuilderPreview && !$isDemoMode && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true);
     if (is_array($input) && ($input['action'] ?? '') === 'submit') {
         header('Content-Type: application/json; charset=utf-8');
@@ -985,11 +986,19 @@ body { min-height: 100vh; display: flex; flex-direction: column; }
         var missing = [];
         for (var i = 0; i < fields.length; i++) {
             var f = fields[i];
-            var val = (f.value || '').trim();
+            // Strip all Unicode whitespace (iOS keyboards often insert \u00A0)
+            var val = (f.value || '').replace(/^[\s\u00A0\u200B\uFEFF]+|[\s\u00A0\u200B\uFEFF]+$/g, '');
             if (!val) {
                 missing.push(f.dataset.label || 'Field');
-            } else if (f.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
-                missing.push((f.dataset.label || 'Email') + ' (invalid format)');
+            } else if (f.type === 'email') {
+                // Normalize: strip any remaining invisible chars inside the value
+                val = val.replace(/[\u00A0\u200B\uFEFF]/g, '');
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+                    missing.push((f.dataset.label || 'Email') + ' (invalid format)');
+                } else {
+                    // Write sanitized value back so the submitted data is clean
+                    f.value = val;
+                }
             }
         }
         if (missing.length > 0) {
@@ -1011,13 +1020,13 @@ body { min-height: 100vh; display: flex; flex-direction: column; }
         show(n);
     };
 
-    var isPreview = <?= $isBuilderPreview ? 'true' : 'false' ?>;
+    var isPreview = <?= ($isBuilderPreview || $isDemoMode) ? 'true' : 'false' ?>;
 
     function collectContact() {
         var data = {};
         document.querySelectorAll('#pv-step-3 .pv-input[data-key], #pv-step-3 .pv-select[data-key]').forEach(function(el) {
             var key = el.dataset.key;
-            if (key) data[key] = (el.value || '').trim();
+            if (key) data[key] = (el.value || '').replace(/^[\s\u00A0\u200B\uFEFF]+|[\s\u00A0\u200B\uFEFF]+$/g, '');
         });
         return data;
     }
@@ -1137,7 +1146,99 @@ body { min-height: 100vh; display: flex; flex-direction: column; }
         var el = document.getElementById('pv-help-' + id);
         if (el) el.classList.toggle('open');
     };
+
+    window.pvDemoRender = function(result) {
+        renderResult(result, 'This is a demo -- no data was sent.');
+        document.getElementById('pv-done').style.display = '';
+    };
 }());
 </script>
+<?php if ($isDemoMode): ?>
+<script>
+(function(){
+    // Demo mode: auto-select options and show result immediately
+    var demoSvcIdx   = <?= json_encode($demoServiceIdx ?? 0) ?>;
+    var demoCplxIdx  = <?= json_encode($demoComplexityIdx ?? 0) ?>;
+    var demoAddons   = <?= json_encode(array_values($demoAddonIndices ?? [])) ?>;
+    var demoContact  = <?= json_encode($demoContact ?? []) ?>;
+    var demoDetails  = <?= json_encode($demoDetails ?? '') ?>;
+
+    // Select service
+    var svcRadios = document.querySelectorAll('input[name="pv-service"]');
+    if (svcRadios[demoSvcIdx]) svcRadios[demoSvcIdx].checked = true;
+
+    // Select complexity
+    var cplxRadios = document.querySelectorAll('input[name="pv-complexity"]');
+    if (cplxRadios[demoCplxIdx]) cplxRadios[demoCplxIdx].checked = true;
+
+    // Select addons
+    var addonChecks = document.querySelectorAll('input[name="pv-addon"]');
+    demoAddons.forEach(function(idx) {
+        if (addonChecks[idx]) addonChecks[idx].checked = true;
+    });
+
+    // Fill contact fields
+    var contactFields = document.querySelectorAll('#pv-step-3 .pv-input[data-key], #pv-step-3 .pv-select[data-key]');
+    contactFields.forEach(function(el) {
+        var key = el.dataset.key;
+        if (key && demoContact[key]) {
+            if (el.tagName === 'SELECT') {
+                for (var i = 0; i < el.options.length; i++) {
+                    if (el.options[i].text.indexOf(demoContact[key]) !== -1 || el.options[i].value === demoContact[key]) {
+                        el.selectedIndex = i;
+                        break;
+                    }
+                }
+            } else {
+                el.value = demoContact[key];
+            }
+        }
+    });
+
+    // Fill details
+    var detailsEl = document.getElementById('pv-details');
+    if (detailsEl && demoDetails) detailsEl.value = demoDetails;
+
+    // Hide all steps and intro, calculate cost, show result
+    var intro = document.getElementById('pv-intro');
+    if (intro) intro.style.display = 'none';
+    var total = <?= $totalSteps ?>;
+    for (var i = 0; i < total; i++) {
+        var stepEl = document.getElementById('pv-step-' + i);
+        if (stepEl) stepEl.style.display = 'none';
+    }
+
+    // Build the result using the same calcCost/renderResult from the main scope
+    // by triggering pvSubmit logic without the server call
+    var svcEl  = document.querySelector('input[name="pv-service"]:checked');
+    var cplxEl = document.querySelector('input[name="pv-complexity"]:checked');
+    var base       = svcEl  ? parseFloat(svcEl.dataset.price)      || 0 : 0;
+    var multiplier = cplxEl ? parseFloat(cplxEl.dataset.multiplier) || 1 : 1;
+    var svcName    = svcEl  ? svcEl.dataset.label  : '';
+    var cplxName   = cplxEl ? cplxEl.dataset.label : '';
+    var addonTotal = 0;
+    var addonItems = [];
+    document.querySelectorAll('input[name="pv-addon"]:checked').forEach(function(el) {
+        var p = parseFloat(el.dataset.price) || 0;
+        addonTotal += p;
+        addonItems.push({ label: el.dataset.label, price: p });
+    });
+    var subtotal = (base * multiplier) + addonTotal;
+
+    // Use pvDemoRender which we expose from the main scope
+    if (typeof window.pvDemoRender === 'function') {
+        window.pvDemoRender({
+            base: base,
+            multiplier: multiplier,
+            addonTotal: addonTotal,
+            subtotal: subtotal,
+            serviceName: svcName,
+            complexityName: cplxName,
+            addons: addonItems
+        });
+    }
+}());
+</script>
+<?php endif; ?>
 </body>
 </html>

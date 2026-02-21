@@ -986,11 +986,19 @@ body { min-height: 100vh; display: flex; flex-direction: column; }
         var missing = [];
         for (var i = 0; i < fields.length; i++) {
             var f = fields[i];
-            var val = (f.value || '').trim();
+            // Strip all Unicode whitespace (iOS keyboards often insert \u00A0)
+            var val = (f.value || '').replace(/^[\s\u00A0\u200B\uFEFF]+|[\s\u00A0\u200B\uFEFF]+$/g, '');
             if (!val) {
                 missing.push(f.dataset.label || 'Field');
-            } else if (f.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
-                missing.push((f.dataset.label || 'Email') + ' (invalid format)');
+            } else if (f.type === 'email') {
+                // Normalize: strip any remaining invisible chars inside the value
+                val = val.replace(/[\u00A0\u200B\uFEFF]/g, '');
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+                    missing.push((f.dataset.label || 'Email') + ' (invalid format)');
+                } else {
+                    // Write sanitized value back so the submitted data is clean
+                    f.value = val;
+                }
             }
         }
         if (missing.length > 0) {
@@ -1018,7 +1026,7 @@ body { min-height: 100vh; display: flex; flex-direction: column; }
         var data = {};
         document.querySelectorAll('#pv-step-3 .pv-input[data-key], #pv-step-3 .pv-select[data-key]').forEach(function(el) {
             var key = el.dataset.key;
-            if (key) data[key] = (el.value || '').trim();
+            if (key) data[key] = (el.value || '').replace(/^[\s\u00A0\u200B\uFEFF]+|[\s\u00A0\u200B\uFEFF]+$/g, '');
         });
         return data;
     }

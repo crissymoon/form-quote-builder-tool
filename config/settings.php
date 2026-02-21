@@ -44,7 +44,7 @@ define('SMTP_PASSWORD', '');
 // ---------------------------------------------------------------
 // Email Addresses
 // ---------------------------------------------------------------
-define('MAIL_FROM',    'noreply@yourdomain.com');
+define('MAIL_FROM',    'noreply@xcaliburmoon.net');
 define('MAIL_FROM_NAME', 'XcaliburMoon Pricing');
 define('MAIL_TO',      'crissy@xcaliburmoon.net');
 

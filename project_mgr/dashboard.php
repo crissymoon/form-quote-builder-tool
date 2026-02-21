@@ -1026,9 +1026,7 @@ if (preg_match('#github\.com[:/](.+?)(?:\.git)?$#', $remote, $m)) {
     function executeBuild(idx, name) {
         var out = document.getElementById('build-out');
         term(out, 'Building: ' + name + '...', false);
-        var fd = new FormData();
-        fd.append('index', idx);
-        api('build_form', fd, function (d) {
+        api('build_form', { index: idx }, function (d) {
             term(out, d.output || d.error || JSON.stringify(d), false);
             loadBuildForms();
         });

@@ -1,37 +1,44 @@
 {
-    "id": "form_9205c5a6c2de",
+    "id": "form_7a898631d900",
     "name": "XcaliburMoon Web Development Pricing",
     "description": "",
+    "videoUrl": "https:\/\/www.youtube.com\/watch?v=Rrp9ghAXOJM",
     "services": [
         {
             "key": "web_design",
             "label": "Web Design",
-            "price": 1500
+            "price": 1500,
+            "help": "A professionally designed website tailored to your brand. Includes layout design, responsive styling, color palette, typography, and up to 5 pages. Ideal for businesses that need a polished online presence."
         },
         {
             "key": "web_development",
             "label": "Web Development",
-            "price": 3500
+            "price": 3500,
+            "help": "Full-stack web development with custom functionality. Includes front-end and back-end coding, database setup, form handling, and deployment. Best for interactive sites that go beyond static pages."
         },
         {
             "key": "ecommerce",
             "label": "E-Commerce",
-            "price": 4500
+            "price": 4500,
+            "help": "A complete online store with product listings, shopping cart, secure checkout, payment gateway integration, and order management. Built on reliable platforms for scalability."
         },
         {
             "key": "software",
             "label": "Custom Software",
-            "price": 7500
+            "price": 7500,
+            "help": "Bespoke software solutions built to your specifications. Includes requirements analysis, architecture design, development, testing, and deployment. For businesses with unique workflow needs."
         },
         {
             "key": "ai_web_app",
             "label": "AI-Driven Web Application",
-            "price": 9500
+            "price": 9500,
+            "help": "A web application powered by AI and machine learning. Includes intelligent features such as natural language processing, recommendation engines, predictive analytics, or computer vision integrated into a web interface."
         },
         {
             "key": "ai_native_app",
             "label": "AI-Driven Native Application",
-            "price": 14000
+            "price": 14000,
+            "help": "A native mobile or desktop application with embedded AI capabilities. Includes platform-specific development (iOS, Android, or desktop), on-device or cloud AI models, and app store deployment."
         }
     ],
     "complexity": [
@@ -39,67 +46,79 @@
             "key": "simple",
             "label": "Simple",
             "description": "Basic pages, minimal interactions",
-            "multiplier": 1
+            "multiplier": 1,
+            "help": "Straightforward project with standard layouts and minimal custom logic. Typically 1-5 pages with basic navigation and contact forms."
         },
         {
             "key": "moderate",
             "label": "Moderate",
             "description": "Custom features, some integrations",
-            "multiplier": 1.4
+            "multiplier": 1.4,
+            "help": "Involves custom interactive elements, third-party service integrations, or dynamic content. May include user accounts, dashboards, or API connections."
         },
         {
             "key": "complex",
             "label": "Complex",
             "description": "Advanced logic, multiple integrations",
-            "multiplier": 2
+            "multiplier": 2,
+            "help": "Multi-layered project with advanced business logic, multiple external integrations, real-time features, or complex data processing workflows."
         },
         {
             "key": "custom",
             "label": "Custom",
             "description": "AI, automation, or enterprise-scale work",
-            "multiplier": 2.8
+            "multiplier": 2.8,
+            "help": "Enterprise-grade work involving AI\/ML pipelines, large-scale automation, microservices architecture, or systems designed for high availability and throughput."
         }
     ],
     "addons": [
         {
             "key": "seo_basic",
             "label": "SEO Setup - Basic",
-            "price": 500
+            "price": 500,
+            "help": "On-page SEO fundamentals: meta tags, sitemap, robots.txt, page speed optimization, and Google Search Console setup."
         },
         {
             "key": "seo_advanced",
             "label": "SEO Setup - Advanced",
-            "price": 1200
+            "price": 1200,
+            "help": "Comprehensive SEO strategy: keyword research, content optimization, structured data markup, backlink audit, and analytics integration."
         },
         {
             "key": "copywriting",
             "label": "Copywriting",
-            "price": 800
+            "price": 800,
+            "help": "Professional copywriting for all site pages. Includes brand voice development, headlines, body copy, and calls to action optimized for engagement."
         },
         {
             "key": "branding",
             "label": "Branding and Identity",
-            "price": 1800
+            "price": 1800,
+            "help": "Complete brand identity package: logo design, color palette, typography guide, brand guidelines document, and social media assets."
         },
         {
             "key": "maintenance",
             "label": "Ongoing Maintenance",
-            "price": 1200
+            "price": 1200,
+            "help": "Monthly maintenance plan covering security updates, performance monitoring, content updates, backups, and priority support for 12 months."
         },
         {
             "key": "hosting_setup",
             "label": "Hosting Configuration",
-            "price": 350
+            "price": 350,
+            "help": "Server setup and deployment: domain configuration, SSL certificate, hosting environment optimization, and DNS management."
         },
         {
             "key": "api_integration",
             "label": "Third-Party API Integration",
-            "price": 1500
+            "price": 1500,
+            "help": "Connect your application to external services such as payment processors, CRMs, email platforms, mapping services, or social media APIs."
         },
         {
             "key": "automation",
             "label": "Business Process Automation",
-            "price": 2200
+            "price": 2200,
+            "help": "Automate repetitive workflows: email sequences, data synchronization, report generation, invoice processing, or custom workflow triggers."
         }
     ],
     "contact": [
@@ -146,8 +165,11 @@
         "fontSize": "16"
     },
     "language": {
-        "headerTitle": "Request a Quote",
-        "headerSubtitle": "Get an accurate estimate for your project",
+        "headerTitle": "XcaliburMoon - Request a Quote",
+        "headerSubtitle": "Please take a moment to quickly answer a few questions to help streamline this process.",
+        "introHeading": "Welcome",
+        "introText": "Watch the video below to learn about our services, then click the button to get started with your custom estimate.",
+        "introButtonLabel": "Get Started",
         "serviceStepTitle": "Tell us about your project",
         "serviceStepDesc": "Select the primary service type that best describes what you need.",
         "complexityStepTitle": "Project Complexity",
@@ -161,7 +183,10 @@
         "submitLabel": "Get Estimate",
         "resultHeading": "Your Estimate",
         "resultDesc": "Based on your selections, here are your pricing options.",
-        "currency": "$"
+        "currency": "$",
+        "resultDisclaimer": "",
+        "detailsLabel": "",
+        "detailsPlaceholder": ""
     },
     "tiers": [
         {
@@ -181,6 +206,6 @@
         }
     ],
     "showBreakdown": true,
-    "updated_at": 1771633695,
-    "created_at": 1771633695
+    "updated_at": 1771637163,
+    "created_at": 1771635250
 }

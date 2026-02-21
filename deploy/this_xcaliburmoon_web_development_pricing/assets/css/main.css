@@ -1,0 +1,552 @@
+/* XcaliburMoon Web Development Pricing - Main Stylesheet */
+/* Colors: primary #244c47, secondary #eaf5f4, accent #081110, text #182523, bg #fcfdfd */
+/* No border-radius anywhere. All elements have sharp corners. */
+
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    font-size: 18px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: #182523;
+    background-color: #fcfdfd;
+    scroll-behavior: smooth;
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: #fcfdfd;
+}
+
+a {
+    color: #244c47;
+    text-decoration: underline;
+}
+
+a:hover {
+    color: #459289;
+}
+
+/* ---- Load Overlay ---- */
+.load-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: #fcfdfd;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.3s ease;
+}
+
+.load-overlay--hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.load-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #eaf5f4;
+    border-top-color: #244c47;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ---- Header ---- */
+.site-header {
+    background-color: #244c47;
+    color: #eaf5f4;
+    padding: 1rem 1.5rem;
+    border-bottom: 3px solid #081110;
+}
+
+.header-inner {
+    max-width: 860px;
+    margin: 0 auto;
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.site-logo {
+    color: #eaf5f4;
+    text-decoration: none;
+    font-size: 1.3rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.site-logo:hover {
+    color: #fcfdfd;
+}
+
+.site-tagline {
+    font-size: 0.85rem;
+    color: #a8ccc9;
+    font-weight: 400;
+}
+
+/* ---- Main Content ---- */
+.main-content {
+    flex: 1;
+    padding: 2.5rem 1.5rem;
+}
+
+.form-container {
+    max-width: 640px;
+    margin: 0 auto;
+}
+
+/* ---- Progress Bar ---- */
+.progress-bar-wrap {
+    height: 6px;
+    background-color: #eaf5f4;
+    margin-bottom: 0.5rem;
+    border: 1px solid #c8e8e5;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    background-color: #244c47;
+    transition: width 0.4s ease;
+}
+
+.step-indicator {
+    font-size: 0.78rem;
+    color: #459289;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+}
+
+/* ---- Step Block ---- */
+.step-block {
+    background-color: #ffffff;
+    border: 1px solid #c8e8e5;
+    padding: 2rem;
+}
+
+.step-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #081110;
+    margin-bottom: 0.4rem;
+}
+
+.step-description {
+    font-size: 0.95rem;
+    color: #459289;
+    margin-bottom: 1.8rem;
+}
+
+/* ---- Form Fields ---- */
+.step-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.4rem;
+}
+
+.field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.field-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #182523;
+}
+
+.required-mark {
+    color: #c0392b;
+    margin-left: 0.2rem;
+}
+
+.field-input,
+.field-select {
+    width: 100%;
+    padding: 0.65rem 0.85rem;
+    font-size: 1rem;
+    font-family: inherit;
+    color: #182523;
+    background-color: #fcfdfd;
+    border: 1px solid #a8ccc9;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.field-input:focus,
+.field-select:focus {
+    border-color: #244c47;
+    box-shadow: 0 0 0 3px rgba(36, 76, 71, 0.12);
+}
+
+.field-input--error,
+.field-select--error {
+    border-color: #c0392b;
+}
+
+.field-group--error .field-label {
+    color: #c0392b;
+}
+
+.field-error {
+    font-size: 0.82rem;
+    color: #c0392b;
+    font-weight: 500;
+}
+
+/* ---- Radio Group ---- */
+.radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.radio-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    cursor: pointer;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid #c8e8e5;
+    transition: background-color 0.15s ease;
+}
+
+.radio-option:hover {
+    background-color: #eaf5f4;
+}
+
+.radio-option input[type="radio"] {
+    margin-top: 3px;
+    accent-color: #244c47;
+    flex-shrink: 0;
+}
+
+.radio-label-text {
+    font-size: 0.92rem;
+    color: #182523;
+}
+
+/* ---- Checkbox Group ---- */
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.checkbox-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    cursor: pointer;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #c8e8e5;
+    transition: background-color 0.15s ease;
+}
+
+.checkbox-option:hover {
+    background-color: #eaf5f4;
+}
+
+.checkbox-option input[type="checkbox"] {
+    margin-top: 3px;
+    accent-color: #244c47;
+    flex-shrink: 0;
+}
+
+.checkbox-label-text {
+    font-size: 0.92rem;
+    color: #182523;
+}
+
+/* ---- Form Actions ---- */
+.form-actions {
+    display: flex;
+    gap: 0.85rem;
+    align-items: center;
+    margin-top: 0.5rem;
+    flex-wrap: wrap;
+}
+
+/* ---- Buttons ---- */
+.btn {
+    display: inline-block;
+    padding: 0.7rem 1.6rem;
+    font-size: 0.95rem;
+    font-family: inherit;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    letter-spacing: 0.02em;
+}
+
+.btn--primary {
+    background-color: #244c47;
+    color: #eaf5f4;
+    border-color: #244c47;
+}
+
+.btn--primary:hover {
+    background-color: #081110;
+    border-color: #081110;
+    color: #fcfdfd;
+}
+
+.btn--secondary {
+    background-color: transparent;
+    color: #244c47;
+    border-color: #244c47;
+}
+
+.btn--secondary:hover {
+    background-color: #eaf5f4;
+}
+
+/* ---- Result Block ---- */
+.result-block {
+    background-color: #ffffff;
+    border: 1px solid #c8e8e5;
+    padding: 2rem;
+}
+
+.result-header {
+    margin-bottom: 1.8rem;
+}
+
+.result-title {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #081110;
+    margin-bottom: 0.4rem;
+}
+
+.result-subtitle {
+    font-size: 0.92rem;
+    color: #459289;
+}
+
+/* ---- Estimate Range ---- */
+.estimate-range {
+    background-color: #eaf5f4;
+    border: 2px solid #244c47;
+    padding: 1.5rem;
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.estimate-label {
+    display: block;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+    color: #459289;
+    margin-bottom: 0.6rem;
+}
+
+.estimate-numbers {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.estimate-low,
+.estimate-high {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #244c47;
+}
+
+.estimate-separator {
+    font-size: 1rem;
+    color: #459289;
+    font-weight: 400;
+}
+
+/* ---- Reference ID Block ---- */
+.ref-id-block {
+    border: 1px solid #c8e8e5;
+    padding: 1rem 1.2rem;
+    margin-bottom: 1.5rem;
+    background-color: #fcfdfd;
+}
+
+.ref-id-label {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #459289;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.ref-id-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #081110;
+    font-family: monospace;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.2rem;
+}
+
+.ref-id-expires {
+    font-size: 0.82rem;
+    color: #459289;
+}
+
+/* ---- Selection Summary ---- */
+.selection-summary {
+    margin-bottom: 1.5rem;
+}
+
+.summary-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #182523;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid #c8e8e5;
+}
+
+.summary-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.summary-item {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    font-size: 0.9rem;
+}
+
+.summary-key {
+    font-weight: 600;
+    color: #182523;
+    min-width: 160px;
+}
+
+.summary-value {
+    color: #459289;
+}
+
+/* ---- Result Actions ---- */
+.result-actions {
+    display: flex;
+    gap: 0.85rem;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+}
+
+/* ---- Result Disclaimer ---- */
+.result-disclaimer {
+    font-size: 0.8rem;
+    color: #459289;
+    line-height: 1.5;
+    border-top: 1px solid #c8e8e5;
+    padding-top: 1rem;
+}
+
+/* ---- Footer ---- */
+.site-footer {
+    background-color: #081110;
+    color: #a8ccc9;
+    padding: 1.2rem 1.5rem;
+    text-align: center;
+    font-size: 0.82rem;
+    border-top: 2px solid #244c47;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.site-footer a {
+    color: #459289;
+}
+
+.site-footer a:hover {
+    color: #eaf5f4;
+}
+
+/* ---- Validation Badge ---- */
+.validation-badge {
+    margin-bottom: 1.5rem;
+    padding: 0.85rem 1rem;
+    border-left: 4px solid;
+    font-size: 0.85rem;
+}
+
+.validation-badge--valid {
+    border-color: #244c47;
+    background-color: #eaf5f4;
+    color: #182523;
+}
+
+.validation-badge--invalid {
+    border-color: #8b1a1a;
+    background-color: #fdf2f2;
+    color: #5a0f0f;
+}
+
+.validation-badge__label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 0.78rem;
+}
+
+.validation-badge__detail {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    opacity: 0.85;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 600px) {
+    .step-block,
+    .result-block {
+        padding: 1.25rem;
+    }
+
+    .estimate-low,
+    .estimate-high {
+        font-size: 1.5rem;
+    }
+
+    .form-actions,
+    .result-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .btn {
+        text-align: center;
+    }
+}

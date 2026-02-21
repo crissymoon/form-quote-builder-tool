@@ -1,4 +1,4 @@
-# XcaliburMoon Web Development Pricing (NOTE: THIS WAS A STARTER PROJECT MADE BY XCALIBUR AGENT - RESEARCH, PLANNING AND DESIGN SYSTEM)
+# XcaliburMoon Web Development Pricing
 
 **A PHP-based, multi-step quote estimation tool built as a portable framework for web development, web design, software, and AI-driven application services.**
 
@@ -12,6 +12,10 @@ Contact: [crissy@xcaliburmoon.net](mailto:crissy@xcaliburmoon.net)
 
 ## Recent Updates
 
+**Full-Stack Dev**
+2026-02-21 | by Crissy
+Several Updates - Checking Dev Dashboard
+
 **QuoteValidator and ML model integration**
 2026-02-20 | by CrissyMoon
 Integrated the trained model into the PHP app. Added src/lib/QuoteValidator.php which runs a two-layer check: (1) deterministic rule check re-implementing th...
@@ -23,10 +27,6 @@ sync_readme.php reads the last four dated notes and writes a Recent Updates bloc
 **ML pricing validation model**
 2026-02-20 | by CrissyMoon
 Added ml/ directory with gen_data.py (generates 2907 labelled rows), quote_math_validation.csv, and quote_math_validator.ipynb (Kaggle notebook). Notebook tr...
-
-**Initial project structure**
-2026-02-20 | by CrissyMoon
-Set up the base project: src, config, assets, build_this, data, design_research, and project_mgr folders. PHPMailer and Math.js dependencies pulled in via se...
 
 <!-- xcm:recent-updates:end -->
 

@@ -1,4 +1,4 @@
-# XcaliburMoon Web Development Pricing (NOTE: THIS IS A STARTER PROJECT MADE BY THE XCALIBUR AGENT PLANNING AND DESIGN SYSTEM)
+# XcaliburMoon Web Development Pricing (NOTE: THIS WAS A STARTER PROJECT MADE BY XCALIBUR AGENT - RESEARCH, PLANNING AND DESIGN SYSTEM)
 
 **A PHP-based, multi-step quote estimation tool built as a portable framework for web development, web design, software, and AI-driven application services.**
 

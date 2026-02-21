@@ -16,7 +16,12 @@ if (!$isBuilderPreview && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true);
     if (is_array($input) && ($input['action'] ?? '') === 'submit') {
         header('Content-Type: application/json; charset=utf-8');
-        $result = pvHandleSubmission($form, $input);
+        try {
+            $result = pvHandleSubmission($form, $input);
+        } catch (\Throwable $th) {
+            error_log('XCM Quote fatal: ' . $th->getMessage() . ' in ' . $th->getFile() . ':' . $th->getLine());
+            $result = ['ok' => false, 'message' => 'A server error occurred. Please take note of your estimate.', 'saved' => false, 'emailed' => false];
+        }
         echo json_encode($result);
         exit;
     }
@@ -30,7 +35,15 @@ function pvHandleSubmission(array $form, array $input): array
 {
     $base = dirname(__DIR__, 2);
     $settingsFile = $base . '/config/settings.php';
-    $autoload     = $base . '/vendor/autoload.php';
+
+    // Load PHPMailer directly instead of Composer autoload to avoid
+    // platform_check.php version gates and missing classMap entries
+    // in deployed builds.
+    $phpmailerDir = $base . '/vendor/phpmailer/phpmailer/src';
+    $phpmailerReady = is_dir($phpmailerDir)
+        && file_exists($phpmailerDir . '/PHPMailer.php')
+        && file_exists($phpmailerDir . '/SMTP.php')
+        && file_exists($phpmailerDir . '/Exception.php');
 
     if (!file_exists($settingsFile)) {
         error_log('XCM Quote: settings not found at ' . $settingsFile);
@@ -70,11 +83,13 @@ function pvHandleSubmission(array $form, array $input): array
     // ── 2. Send emails ────────────────────────────────────────────────────
     $emailed = false;
     $sendEnabled = defined('SEND_EMAILS') ? SEND_EMAILS : true;
-    if ($sendEnabled && file_exists($autoload)) {
-        require_once $autoload;
+    if ($sendEnabled && $phpmailerReady) {
+        require_once $phpmailerDir . '/Exception.php';
+        require_once $phpmailerDir . '/PHPMailer.php';
+        require_once $phpmailerDir . '/SMTP.php';
         $emailed = pvSendEmails($form, $input);
-    } elseif ($sendEnabled && !file_exists($autoload)) {
-        error_log('XCM Quote: vendor/autoload.php not found -- skipping email. Run composer install.');
+    } elseif ($sendEnabled && !$phpmailerReady) {
+        error_log('XCM Quote: PHPMailer not found at ' . $phpmailerDir . ' -- skipping email.');
     }
 
     // Build user-facing message

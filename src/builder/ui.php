@@ -328,6 +328,10 @@ a:hover { color: var(--c-accent); }
             <p class="prop-section-title">Results Page</p>
             <div class="prop-row"><label class="prop-label">Heading</label><input type="text" class="prop-input" id="lang-result-heading" oninput="langChanged()"></div>
             <div class="prop-row"><label class="prop-label">Description</label><textarea class="prop-textarea" id="lang-result-desc" oninput="langChanged()"></textarea></div>
+            <div class="prop-row"><label class="prop-label">Disclaimer notice</label><textarea class="prop-textarea" id="lang-result-disclaimer" style="min-height:70px;" oninput="langChanged()"></textarea></div>
+            <p class="prop-section-title">Additional Details</p>
+            <div class="prop-row"><label class="prop-label">Field label</label><input type="text" class="prop-input" id="lang-details-label" oninput="langChanged()"></div>
+            <div class="prop-row"><label class="prop-label">Placeholder</label><input type="text" class="prop-input" id="lang-details-placeholder" oninput="langChanged()"></div>
             <div class="prop-row"><label class="prop-label">Currency symbol</label><input type="text" class="prop-input" id="lang-currency" maxlength="4" style="width:60px;" oninput="langChanged()"></div>
         </div>
 
@@ -837,6 +841,8 @@ function renderLivePreview() {
             }
             html += '</div>';
         });
+        html += '<div class="lp-field-group" style="margin-top:0.5rem;"><label class="lp-label">' + esc(l.detailsLabel || 'Additional Details') + '</label>';
+        html += '<textarea class="lp-input" disabled rows="3" style="resize:vertical;min-height:50px;font-family:inherit;" placeholder="..."></textarea></div>';
         html += '</div>';
     }
 
@@ -1052,6 +1058,9 @@ function populateLangPanel() {
     setVal('lang-submit',        l.submitLabel    || '');
     setVal('lang-result-heading', l.resultHeading || '');
     setVal('lang-result-desc',   l.resultDesc     || '');
+    setVal('lang-result-disclaimer', l.resultDisclaimer || '');
+    setVal('lang-details-label',      l.detailsLabel       || '');
+    setVal('lang-details-placeholder', l.detailsPlaceholder || '');
     setVal('lang-currency',      l.currency       || '$');
 }
 
@@ -1075,6 +1084,9 @@ window.langChanged = function() {
     form.language.submitLabel        = getVal('lang-submit');
     form.language.resultHeading      = getVal('lang-result-heading');
     form.language.resultDesc         = getVal('lang-result-desc');
+    form.language.resultDisclaimer   = getVal('lang-result-disclaimer');
+    form.language.detailsLabel       = getVal('lang-details-label');
+    form.language.detailsPlaceholder = getVal('lang-details-placeholder');
     form.language.currency           = getVal('lang-currency');
     document.getElementById('toolbar-form-name').textContent = form.name || 'Untitled';
     renderLivePreview();

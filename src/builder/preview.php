@@ -82,14 +82,20 @@ function pvHandleSubmission(array $form, array $input): array
 
     // ── 2. Send emails ────────────────────────────────────────────────────
     $emailed = false;
+    $emailLog = [];
     $sendEnabled = defined('SEND_EMAILS') ? SEND_EMAILS : true;
     if ($sendEnabled && $phpmailerReady) {
         require_once $phpmailerDir . '/Exception.php';
         require_once $phpmailerDir . '/PHPMailer.php';
         require_once $phpmailerDir . '/SMTP.php';
-        $emailed = pvSendEmails($form, $input);
+        $emailResult = pvSendEmails($form, $input);
+        $emailed  = $emailResult['sent'];
+        $emailLog = $emailResult['log'];
     } elseif ($sendEnabled && !$phpmailerReady) {
+        $emailLog[] = 'PHPMailer not found at ' . $phpmailerDir;
         error_log('XCM Quote: PHPMailer not found at ' . $phpmailerDir . ' -- skipping email.');
+    } elseif (!$sendEnabled) {
+        $emailLog[] = 'SEND_EMAILS is disabled in settings.';
     }
 
     // Build user-facing message
@@ -106,6 +112,7 @@ function pvHandleSubmission(array $form, array $input): array
         'message' => implode(' ', $parts),
         'saved'   => $saved,
         'emailed' => $emailed,
+        'debug'   => $emailLog,
     ];
 }
 
@@ -155,7 +162,7 @@ function pvSaveSubmission(string $base, array $record): bool
 /**
  * Send themed HTML emails to admin and/or user via PHPMailer.
  */
-function pvSendEmails(array $form, array $input): bool
+function pvSendEmails(array $form, array $input): array
 {
     $sty  = $form['style']    ?? [];
     $lang = $form['language']  ?? [];
@@ -284,16 +291,24 @@ function pvSendEmails(array $form, array $input): bool
     $sendToAdmin = defined('SEND_EMAIL_TO_ADMIN') ? SEND_EMAIL_TO_ADMIN : true;
     $sendToUser  = defined('SEND_EMAIL_TO_USER') ? SEND_EMAIL_TO_USER : true;
 
+    $mode = strtolower(defined('MAIL_MODE') ? MAIL_MODE : 'server');
+
     $anySent = false;
     $errors  = [];
+    $log     = [];
+
+    $log[] = 'MAIL_MODE: ' . $mode;
+    $log[] = 'SEND_EMAIL_TO_ADMIN: ' . ($sendToAdmin ? 'true' : 'false');
+    $log[] = 'SEND_EMAIL_TO_USER: ' . ($sendToUser ? 'true' : 'false');
+    $log[] = 'MAIL_TO: ' . ($adminTo ?: '(empty)');
+    $log[] = 'MAIL_FROM: ' . $fromAddr;
+    $log[] = 'User email: ' . ($userEmail ?: '(none)');
 
     try {
         $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
         $mail->CharSet  = 'UTF-8';
         $mail->Encoding = 'base64';
         $mail->XMailer  = ' '; // suppress X-Mailer header
-
-        $mode = strtolower(defined('MAIL_MODE') ? MAIL_MODE : 'server');
 
         if ($mode === 'ssl' || $mode === 'smtp' || $mode === 'tls') {
             $mail->isSMTP();
@@ -314,28 +329,38 @@ function pvSendEmails(array $form, array $input): bool
                 if ($mail->Port === 587) { $mail->Port = 465; } // auto-fix common misconfiguration
             }
 
-            // Log SMTP conversation to error_log when in development
-            if (defined('APP_ENV') && APP_ENV === 'development') {
-                $mail->SMTPDebug  = 2;
-                $mail->Debugoutput = function ($str, $level) {
-                    error_log('XCM SMTP [' . $level . ']: ' . trim($str));
-                };
-            }
+            $log[] = 'SMTP: ' . $mail->Host . ':' . $mail->Port . ' (' . ($mail->SMTPSecure ?: 'none') . ')';
+            $log[] = 'SMTP_USERNAME: ' . ($mail->Username ? substr($mail->Username, 0, 3) . '***' : '(empty)');
+            $log[] = 'SMTP_PASSWORD: ' . ($mail->Password ? '***set***' : '(empty)');
+
+            // Capture SMTP debug output
+            $smtpDebug = [];
+            $mail->SMTPDebug  = 2;
+            $mail->Debugoutput = function ($str, $level) use (&$smtpDebug) {
+                $line = trim($str);
+                if ($line !== '') {
+                    $smtpDebug[] = '[SMTP ' . $level . '] ' . $line;
+                    error_log('XCM SMTP [' . $level . ']: ' . $line);
+                }
+            };
 
             // Validate SMTP credentials are actually set
             if (empty($mail->Host) || empty($mail->Username) || empty($mail->Password)) {
-                $msg = 'SMTP credentials incomplete (host/username/password). Check config/settings.php.';
+                $msg = 'SMTP credentials incomplete -- host: ' . ($mail->Host ?: 'empty') . ', username: ' . ($mail->Username ?: 'empty') . ', password: ' . ($mail->Password ? 'set' : 'empty');
                 error_log('XCM Quote: ' . $msg);
-                $errors[] = $msg;
-                return false;
+                $log[] = 'ERROR: ' . $msg;
+                return ['sent' => false, 'log' => $log];
             }
         } else {
             // 'server' mode -- try sendmail first, fall back to mail()
             $sendmail = ini_get('sendmail_path');
+            $log[] = 'sendmail_path: ' . ($sendmail ?: '(not set)');
             if (!empty($sendmail) && $sendmail !== '/dev/null') {
                 $mail->isSendmail();
+                $log[] = 'Using sendmail';
             } else {
                 $mail->isMail();
+                $log[] = 'Using PHP mail()';
             }
         }
 
@@ -353,13 +378,18 @@ function pvSendEmails(array $form, array $input): bool
                 $mail->AltBody = strip_tags(str_replace(['<br>', '<br/>', '<br />'], "\n", $adminBody));
                 $mail->send();
                 $anySent = true;
+                $log[] = 'Admin email sent to ' . $adminTo;
             } catch (\Exception $e) {
                 $msg = 'Admin email failed: ' . $e->getMessage();
                 error_log('XCM Quote: ' . $msg);
-                $errors[] = $msg;
+                $log[] = 'ERROR: ' . $msg;
             }
             $mail->clearAddresses();
             $mail->clearReplyTos();
+        } elseif ($sendToAdmin) {
+            $log[] = 'Admin email skipped: MAIL_TO is empty';
+        } else {
+            $log[] = 'Admin email skipped: SEND_EMAIL_TO_ADMIN is false';
         }
 
         // 2. Send to user (confirmation)
@@ -373,21 +403,28 @@ function pvSendEmails(array $form, array $input): bool
                 $mail->AltBody = strip_tags(str_replace(['<br>', '<br/>', '<br />'], "\n", $clientBody));
                 $mail->send();
                 $anySent = true;
+                $log[] = 'User email sent to ' . $userEmail;
             } catch (\Exception $e) {
                 $msg = 'User email failed: ' . $e->getMessage();
                 error_log('XCM Quote: ' . $msg);
-                $errors[] = $msg;
+                $log[] = 'ERROR: ' . $msg;
             }
+        } elseif ($sendToUser) {
+            $log[] = 'User email skipped: no valid email address provided';
+        } else {
+            $log[] = 'User email skipped: SEND_EMAIL_TO_USER is false';
         }
 
-        if (!$anySent && !empty($errors)) {
-            error_log('XCM Quote: all emails failed. Errors: ' . implode(' | ', $errors));
+        // Append SMTP transcript
+        if (!empty($smtpDebug)) {
+            $log = array_merge($log, $smtpDebug);
         }
 
-        return $anySent;
+        return ['sent' => $anySent, 'log' => $log];
     } catch (\Exception $e) {
+        $log[] = 'ERROR: ' . $e->getMessage();
         error_log('XCM Quote Email Error: ' . $e->getMessage());
-        return false;
+        return ['sent' => false, 'log' => $log];
     }
 }
 // ── End form submission handler ───────────────────────────────────────────────
@@ -1039,12 +1076,32 @@ body { min-height: 100vh; display: flex; flex-direction: column; }
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         })
-        .then(function(r) { return r.json(); })
+        .then(function(r) {
+            if (!r.ok) {
+                console.error('[XCM Submit] Server returned HTTP ' + r.status);
+            }
+            return r.json();
+        })
         .then(function(d) {
+            console.log('[XCM Submit] Response:', JSON.stringify(d, null, 2));
+            if (d.debug && Array.isArray(d.debug)) {
+                console.group('[XCM Submit] Email diagnostics');
+                d.debug.forEach(function(line) {
+                    if (line.indexOf('ERROR') === 0) {
+                        console.error(line);
+                    } else if (line.indexOf('[SMTP') === 0) {
+                        console.debug(line);
+                    } else {
+                        console.log(line);
+                    }
+                });
+                console.groupEnd();
+            }
             renderResult(result, d.message || '');
             document.getElementById('pv-done').style.display = '';
         })
-        .catch(function() {
+        .catch(function(err) {
+            console.error('[XCM Submit] Fetch failed:', err);
             renderResult(result, '');
             document.getElementById('pv-done').style.display = '';
         });

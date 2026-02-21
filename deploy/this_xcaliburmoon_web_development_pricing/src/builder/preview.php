@@ -81,7 +81,10 @@ function pvHandleSubmission(array $form, array $input): array
     $parts = [];
     if ($saved)   { $parts[] = 'Your submission has been recorded.'; }
     if ($emailed && $userEmail) { $parts[] = 'A confirmation has been sent to your email.'; }
-    if (!$saved && !$emailed)   { $parts[] = 'Please take note of your estimate.'; }
+    if ($sendEnabled && !$emailed) {
+        $parts[] = 'Email delivery is not available at this time.';
+    }
+    if (!$saved && !$emailed) { $parts[] = 'Please take note of your estimate.'; }
 
     return [
         'ok'      => $saved || $emailed,
@@ -267,22 +270,58 @@ function pvSendEmails(array $form, array $input): bool
     $sendToUser  = defined('SEND_EMAIL_TO_USER') ? SEND_EMAIL_TO_USER : true;
 
     $anySent = false;
+    $errors  = [];
 
     try {
         $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+        $mail->CharSet  = 'UTF-8';
+        $mail->Encoding = 'base64';
+        $mail->XMailer  = ' '; // suppress X-Mailer header
 
-        $mode = defined('MAIL_MODE') ? MAIL_MODE : 'server';
-        if ($mode === 'smtp' || $mode === 'tls') {
+        $mode = strtolower(defined('MAIL_MODE') ? MAIL_MODE : 'server');
+
+        if ($mode === 'ssl' || $mode === 'smtp' || $mode === 'tls') {
             $mail->isSMTP();
-            $mail->Host       = SMTP_HOST;
+            $mail->Host       = defined('SMTP_HOST')     ? SMTP_HOST     : '';
+            $mail->Port       = defined('SMTP_PORT')     ? (int) SMTP_PORT : 465;
             $mail->SMTPAuth   = true;
-            $mail->Username   = SMTP_USERNAME;
-            $mail->Password   = SMTP_PASSWORD;
-            $mail->SMTPSecure = ($mode === 'tls') ? \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS : \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
-            $mail->Port       = SMTP_PORT;
+            $mail->Username   = defined('SMTP_USERNAME') ? SMTP_USERNAME : '';
+            $mail->Password   = defined('SMTP_PASSWORD') ? SMTP_PASSWORD : '';
+            $mail->Timeout    = 15;
+
+            // ssl / smtp  = implicit SSL on port 465
+            // tls         = STARTTLS on port 587
+            if ($mode === 'tls') {
+                $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+                if ($mail->Port === 465) { $mail->Port = 587; } // auto-fix common misconfiguration
+            } else {
+                $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
+                if ($mail->Port === 587) { $mail->Port = 465; } // auto-fix common misconfiguration
+            }
+
+            // Log SMTP conversation to error_log when in development
+            if (defined('APP_ENV') && APP_ENV === 'development') {
+                $mail->SMTPDebug  = 2;
+                $mail->Debugoutput = function ($str, $level) {
+                    error_log('XCM SMTP [' . $level . ']: ' . trim($str));
+                };
+            }
+
+            // Validate SMTP credentials are actually set
+            if (empty($mail->Host) || empty($mail->Username) || empty($mail->Password)) {
+                $msg = 'SMTP credentials incomplete (host/username/password). Check config/settings.php.';
+                error_log('XCM Quote: ' . $msg);
+                $errors[] = $msg;
+                return false;
+            }
         } else {
-            // Use PHP mail() -- requires a working sendmail/MTA on the server
-            $mail->isMail();
+            // 'server' mode -- try sendmail first, fall back to mail()
+            $sendmail = ini_get('sendmail_path');
+            if (!empty($sendmail) && $sendmail !== '/dev/null') {
+                $mail->isSendmail();
+            } else {
+                $mail->isMail();
+            }
         }
 
         // 1. Send to business/developer
@@ -300,7 +339,9 @@ function pvSendEmails(array $form, array $input): bool
                 $mail->send();
                 $anySent = true;
             } catch (\Exception $e) {
-                error_log('XCM Quote: admin email failed: ' . $e->getMessage());
+                $msg = 'Admin email failed: ' . $e->getMessage();
+                error_log('XCM Quote: ' . $msg);
+                $errors[] = $msg;
             }
             $mail->clearAddresses();
             $mail->clearReplyTos();
@@ -318,8 +359,14 @@ function pvSendEmails(array $form, array $input): bool
                 $mail->send();
                 $anySent = true;
             } catch (\Exception $e) {
-                error_log('XCM Quote: user email failed: ' . $e->getMessage());
+                $msg = 'User email failed: ' . $e->getMessage();
+                error_log('XCM Quote: ' . $msg);
+                $errors[] = $msg;
             }
+        }
+
+        if (!$anySent && !empty($errors)) {
+            error_log('XCM Quote: all emails failed. Errors: ' . implode(' | ', $errors));
         }
 
         return $anySent;

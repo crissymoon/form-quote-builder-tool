@@ -26,27 +26,43 @@ define('REFERENCE_EXPIRY_DAYS', 14);
 
 // ---------------------------------------------------------------
 // Mail Delivery Mode
-// Accepted values: 'smtp', 'tls', 'server'
+//
+//   'ssl'    -- SMTP over SSL (port 465). Use this for Hostinger
+//               and most shared hosts that require port 465.
+//   'tls'    -- SMTP with STARTTLS (port 587). Common for Gmail,
+//               Outlook, and other providers.
+//   'smtp'   -- Alias for 'ssl' (kept for backward compatibility).
+//   'server' -- Use PHP mail()/sendmail. Only works if the server
+//               has a working MTA (postfix, sendmail). Will fail
+//               silently on most shared hosts.
 // ---------------------------------------------------------------
-define('MAIL_MODE', 'server');
+define('MAIL_MODE', 'ssl');
 
 // ---------------------------------------------------------------
 // SMTP Credentials
-// Only required when MAIL_MODE is 'smtp' or 'tls'
-// Store SMTP_PASSWORD outside the web root.
+// Required when MAIL_MODE is 'ssl', 'tls', or 'smtp'.
+// Store SMTP_PASSWORD outside the web root on production.
+//
+// Hostinger example:
+//   SMTP_HOST     = 'smtp.hostinger.com'
+//   SMTP_PORT     = 465
+//   SMTP_USERNAME = 'you@yourdomain.com'
+//   SMTP_PASSWORD = 'your-email-password'
+//   MAIL_MODE     = 'ssl'
 // ---------------------------------------------------------------
-define('SMTP_HOST',     '');
-define('SMTP_PORT',     587);
+define('SMTP_HOST',     'smtp.hostinger.com');
+define('SMTP_PORT',     465);
 define('SMTP_USERNAME', '');
 // define('SMTP_PASSWORD', file_get_contents('/path/outside/webroot/smtp_pass.txt'));
 define('SMTP_PASSWORD', '');
 
 // ---------------------------------------------------------------
 // Email Addresses
+// MAIL_FROM should match the domain in SMTP_USERNAME on most hosts.
 // ---------------------------------------------------------------
-define('MAIL_FROM',    'noreply@xcaliburmoon.net');
+define('MAIL_FROM',      'noreply@xcaliburmoon.net');
 define('MAIL_FROM_NAME', 'XcaliburMoon Pricing');
-define('MAIL_TO',      'crissy@xcaliburmoon.net');
+define('MAIL_TO',        'crissy@xcaliburmoon.net');
 
 // ---------------------------------------------------------------
 // Submission Behavior

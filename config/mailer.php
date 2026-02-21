@@ -24,16 +24,25 @@ function sendQuoteEmail(array $record): bool
     $mail = new PHPMailer(true);
 
     try {
-        $mode = defined('MAIL_MODE') ? MAIL_MODE : 'server';
+        $mode = strtolower(defined('MAIL_MODE') ? MAIL_MODE : 'server');
 
-        if ($mode === 'smtp' || $mode === 'tls') {
+        if ($mode === 'ssl' || $mode === 'smtp' || $mode === 'tls') {
             $mail->isSMTP();
             $mail->Host       = SMTP_HOST;
+            $mail->Port       = (int) SMTP_PORT;
             $mail->SMTPAuth   = true;
             $mail->Username   = SMTP_USERNAME;
             $mail->Password   = SMTP_PASSWORD;
-            $mail->SMTPSecure = ($mode === 'tls') ? PHPMailer::ENCRYPTION_STARTTLS : PHPMailer::ENCRYPTION_SMTPS;
-            $mail->Port       = SMTP_PORT;
+            $mail->Timeout    = 15;
+            $mail->CharSet    = 'UTF-8';
+
+            if ($mode === 'tls') {
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                if ($mail->Port === 465) { $mail->Port = 587; }
+            } else {
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+                if ($mail->Port === 587) { $mail->Port = 465; }
+            }
         } else {
             $mail->isMail();
         }

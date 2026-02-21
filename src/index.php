@@ -5,11 +5,16 @@ declare(strict_types=1);
  * XcaliburMoon Web Development Pricing
  * Multi-step quote estimation tool
  * PHP 8.3+
+ *
+ * When a form has been built and saved in the form builder, the front-end
+ * renders that form using the builder preview renderer so the public-facing
+ * form always matches what was configured in the builder.
  */
 
 define('APP_ROOT', __DIR__);
 define('CONFIG_PATH', APP_ROOT . '/../config/settings.php');
 define('DATA_PATH', APP_ROOT . '/../data/');
+define('BUILDER_FORMS_PATH', APP_ROOT . '/../data/forms/');
 
 if (!file_exists(CONFIG_PATH)) {
     http_response_code(500);
@@ -24,6 +29,42 @@ require_once APP_ROOT . '/lib/ReferenceID.php';
 require_once APP_ROOT . '/lib/FormSteps.php';
 
 session_start();
+
+// ── Check for a builder-configured form ──────────────────────────────────────
+// If the user has built and saved a form in the form builder, render it instead
+// of the hardcoded legacy form. This keeps the front-end in sync with the builder.
+function load_latest_builder_form(): ?array
+{
+    if (!is_dir(BUILDER_FORMS_PATH)) return null;
+    $files = glob(BUILDER_FORMS_PATH . '*.json') ?: [];
+    if (empty($files)) return null;
+
+    $latest     = null;
+    $latestTime = 0;
+    foreach ($files as $f) {
+        $raw = json_decode(file_get_contents($f), true);
+        if (!$raw) continue;
+        $updated = (int) ($raw['updated_at'] ?? 0);
+        if ($updated > $latestTime) {
+            $latestTime = $updated;
+            $latest     = $raw;
+        }
+    }
+    return $latest;
+}
+
+// Render the builder form if one exists (non-demo, non-step-based requests)
+$isDemo      = isset($_GET['demo']);
+$isStepNav   = isset($_GET['step']);
+$isPostAction = ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action']));
+
+if (!$isDemo && !$isStepNav && !$isPostAction) {
+    $form = load_latest_builder_form();
+    if ($form) {
+        require APP_ROOT . '/builder/preview.php';
+        exit;
+    }
+}
 
 // Demo mode: renders a pre-populated result view for visual testing
 if (isset($_GET['demo'])) {

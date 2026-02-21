@@ -215,6 +215,7 @@ if (isset($_GET['preview'])) {
         echo '<p style="font-family:sans-serif;padding:2rem;">Form not found.</p>';
         exit;
     }
+    $isBuilderPreview = true;
     require __DIR__ . '/preview.php';
     exit;
 }

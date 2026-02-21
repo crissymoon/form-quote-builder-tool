@@ -4,8 +4,12 @@ declare(strict_types=1);
  * Quote Form Builder -- Live Preview Renderer
  * Reads configured services, complexity, add-ons, contact fields
  * and calculates an accurate quote with budget tier options.
- * $form is already loaded by index.php
+ * $form is already loaded by index.php or src/index.php (live mode).
+ *
+ * $isBuilderPreview: true when opened from the builder, false when
+ * rendered as the live public-facing form.
  */
+$isBuilderPreview = $isBuilderPreview ?? false;
 $sty   = $form['style']    ?? [];
 $lang  = $form['language']  ?? [];
 $tiers = $form['tiers']     ?? [
@@ -60,7 +64,7 @@ $totalSteps = 4;
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Preview: <?= htmlspecialchars($form['name'] ?? 'Quote Form') ?></title>
+<title><?= $isBuilderPreview ? 'Preview: ' : '' ?><?= htmlspecialchars($form['name'] ?? 'Quote Form') ?></title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { font-size: <?= $fontSize ?>px; font-family: <?= $fontFamily ?>; color: <?= $textColor ?>; background: <?= $bgColor ?>; }
@@ -134,10 +138,12 @@ body { min-height: 100vh; display: flex; flex-direction: column; }
 </head>
 <body>
 
+<?php if ($isBuilderPreview): ?>
 <div class="preview-bar">
     <span>PREVIEW | <?= htmlspecialchars($form['name'] ?? 'Quote Form') ?></span>
     <a href="/form-builder?edit=<?= htmlspecialchars(urlencode($form['id'])) ?>">&larr; Back to Editor</a>
 </div>
+<?php endif; ?>
 
 <header class="pv-header">
     <div class="pv-header-title"><?= $headerTitle ?></div>
@@ -266,7 +272,7 @@ body { min-height: 100vh; display: flex; flex-direction: column; }
 </div>
 </main>
 
-<footer class="pv-footer">Preview only -- no data is collected.</footer>
+<footer class="pv-footer"><?= $isBuilderPreview ? 'Preview only -- no data is collected.' : '&copy; ' . date('Y') . ' ' . htmlspecialchars($form['name'] ?? '') ?></footer>
 
 <script>
 (function(){
@@ -360,7 +366,9 @@ body { min-height: 100vh; display: flex; flex-direction: column; }
         }
 
         html += '<div style="text-align:center;margin-top:1.5rem;">';
+<?php if ($isBuilderPreview): ?>
         html += '<p style="font-size:0.75rem;color:<?= $accentColor ?>;margin-bottom:0.8rem;">This is a preview -- no data was sent.</p>';
+<?php endif; ?>
         html += '<button class="pv-btn pv-btn-secondary" onclick="pvReset()">Start Over</button>';
         html += '</div></div>';
         el.innerHTML = html;

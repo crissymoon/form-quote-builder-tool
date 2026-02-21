@@ -138,7 +138,7 @@ a:hover { color: var(--c-accent); }
 /* right sidebar */
 .sidebar-right { width: 280px; flex-shrink: 0; background: #f6faf9; border-left: 1px solid var(--c-border); overflow-y: auto; display: flex; flex-direction: column; }
 .props-tabs { display: flex; border-bottom: 2px solid var(--c-border); flex-shrink: 0; }
-.props-tab { flex: 1; padding: 0.55rem 0; background: none; border: none; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; color: var(--c-muted); border-bottom: 3px solid transparent; }
+.props-tab { flex: 1; padding: 0.55rem 0.15rem; background: none; border: none; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0; cursor: pointer; color: var(--c-muted); border-bottom: 3px solid transparent; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .props-tab.active { color: var(--c-primary); border-bottom-color: var(--c-primary); }
 .props-panel { padding: 0.85rem 0.75rem; display: none; }
 .props-panel.active { display: block; }
@@ -248,7 +248,7 @@ a:hover { color: var(--c-accent); }
         <div class="props-tabs">
             <button class="props-tab active" id="ptab-edit" onclick="showPropTab('edit')">Edit</button>
             <button class="props-tab" id="ptab-style" onclick="showPropTab('style')">Style</button>
-            <button class="props-tab" id="ptab-lang" onclick="showPropTab('lang')">Language</button>
+            <button class="props-tab" id="ptab-lang" onclick="showPropTab('lang')">Lang</button>
             <button class="props-tab" id="ptab-content" onclick="showPropTab('content')">Content</button>
             <button class="props-tab" id="ptab-tiers" onclick="showPropTab('tiers')">Tiers</button>
         </div>

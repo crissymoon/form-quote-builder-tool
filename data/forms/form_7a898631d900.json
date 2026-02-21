@@ -184,9 +184,11 @@
         "resultHeading": "Your Estimate",
         "resultDesc": "Based on your selections, here are your pricing options.",
         "currency": "$",
-        "resultDisclaimer": "",
+        "resultDisclaimer": "Please be aware that the estimation system may yield results that are either higher or lower than the final pricing. You will receive an email with a scheduled time to set up a phone call and a visual presentation as we work on your project. The pricing provided here is subject to change and should not be considered as a fixed price for your project. If an error occurs with this estimation, our system will trigger an alert for inaccuracies, and you will receive an email explaining the details. If you have not received an email within 1 to 7 days, please use the contact information provided on the main page to reach out to us.",
         "detailsLabel": "",
-        "detailsPlaceholder": ""
+        "detailsPlaceholder": "",
+        "backLinkUrl": "https:\/\/xcaliburmoon.net\/",
+        "backLinkLabel": "Go Back - XcaliburMoon"
     },
     "tiers": [
         {
@@ -206,6 +208,6 @@
         }
     ],
     "showBreakdown": true,
-    "updated_at": 1771637163,
+    "updated_at": 1771638463,
     "created_at": 1771635250
 }

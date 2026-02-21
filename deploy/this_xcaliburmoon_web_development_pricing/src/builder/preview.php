@@ -10,6 +10,214 @@ declare(strict_types=1);
  * rendered as the live public-facing form.
  */
 $isBuilderPreview = $isBuilderPreview ?? false;
+
+// ── Handle form submission (AJAX POST) ────────────────────────────────────────
+if (!$isBuilderPreview && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $input = json_decode(file_get_contents('php://input'), true);
+    if (is_array($input) && ($input['action'] ?? '') === 'submit') {
+        header('Content-Type: application/json; charset=utf-8');
+        $emailSent = pvSendEmails($form, $input);
+        echo json_encode(['ok' => $emailSent, 'message' => $emailSent ? 'Your estimate has been sent to your email.' : 'Could not send email at this time. Please take note of your estimate.']);
+        exit;
+    }
+}
+
+function pvSendEmails(array $form, array $input): bool
+{
+    // Locate config files relative to this file
+    $base = dirname(__DIR__, 2); // project root or deploy root
+    $settingsFile = $base . '/config/settings.php';
+    $mailerFile   = $base . '/config/mailer.php';
+    $autoload     = $base . '/vendor/autoload.php';
+
+    if (!file_exists($settingsFile) || !file_exists($autoload)) {
+        error_log('XCM Quote: settings or vendor not found at ' . $base);
+        return false;
+    }
+
+    if (!defined('APP_NAME')) {
+        require_once $settingsFile;
+    }
+    require_once $autoload;
+
+    $sty  = $form['style']    ?? [];
+    $lang = $form['language']  ?? [];
+    $primaryColor = $sty['primaryColor'] ?? '#244c47';
+    $accentColor  = $sty['accentColor']  ?? '#459289';
+    $bgColor      = $sty['bgColor']      ?? '#fcfdfd';
+    $textColor    = $sty['textColor']     ?? '#182523';
+    $headerBg     = $sty['headerBg']      ?? '#244c47';
+    $headerText   = $sty['headerText']    ?? '#eaf5f4';
+    $currency     = $lang['currency']     ?? '$';
+    $formName     = $form['name']         ?? 'Quote Form';
+
+    $contact   = $input['contact']   ?? [];
+    $service   = $input['service']   ?? '';
+    $complexity = $input['complexity'] ?? '';
+    $addons    = $input['addons']    ?? [];
+    $tiers     = $input['tiers']     ?? [];
+    $subtotal  = (float) ($input['subtotal'] ?? 0);
+    $details   = trim($input['details'] ?? '');
+
+    $userName  = htmlspecialchars($contact['name']  ?? $contact['full_name'] ?? 'Visitor');
+    $userEmail = filter_var($contact['email'] ?? $contact['email_address'] ?? '', FILTER_VALIDATE_EMAIL);
+
+    // Build tier rows
+    $tierRows = '';
+    foreach ($tiers as $t) {
+        $tierRows .= '<td style="padding:12px 10px;text-align:center;border:1px solid ' . $accentColor . '40;">';
+        $tierRows .= '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:' . $accentColor . ';">' . htmlspecialchars($t['name'] ?? 'Tier') . '</div>';
+        $tierRows .= '<div style="font-size:22px;font-weight:700;color:' . $primaryColor . ';margin:6px 0;">' . $currency . number_format((float)($t['price'] ?? 0)) . '</div>';
+        $tierRows .= '<div style="font-size:11px;color:' . $textColor . ';opacity:0.7;">' . htmlspecialchars($t['description'] ?? '') . '</div>';
+        $tierRows .= '</td>';
+    }
+
+    // Build addon rows
+    $addonRows = '';
+    foreach ($addons as $a) {
+        $addonRows .= '<tr><td style="padding:6px 0;font-size:13px;color:' . $textColor . ';">' . htmlspecialchars($a['label'] ?? '') . '</td>';
+        $addonRows .= '<td style="padding:6px 0;font-size:13px;font-weight:700;color:' . $primaryColor . ';text-align:right;">+' . $currency . number_format((float)($a['price'] ?? 0)) . '</td></tr>';
+    }
+
+    // Contact summary rows
+    $contactRows = '';
+    foreach ($contact as $key => $val) {
+        if ($val === '' || $val === null) continue;
+        $label = ucwords(str_replace('_', ' ', $key));
+        $contactRows .= '<tr><td style="padding:4px 0;font-size:13px;color:' . $accentColor . ';font-weight:600;width:140px;vertical-align:top;">' . htmlspecialchars($label) . '</td>';
+        $contactRows .= '<td style="padding:4px 0;font-size:13px;color:' . $textColor . ';">' . htmlspecialchars((string)$val) . '</td></tr>';
+    }
+
+    // Common email body
+    $emailBody = function(string $greeting, bool $isClient) use ($formName, $primaryColor, $accentColor, $bgColor, $textColor, $headerBg, $headerText, $currency, $service, $complexity, $subtotal, $tierRows, $addonRows, $contactRows, $details, $userName) {
+        $html  = '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>';
+        $html .= '<body style="margin:0;padding:0;background:' . $bgColor . ';font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;">';
+        $html .= '<table width="100%" cellpadding="0" cellspacing="0" style="background:' . $bgColor . ';">';
+        $html .= '<tr><td align="center" style="padding:20px 15px;">';
+        $html .= '<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">';
+
+        // Header
+        $html .= '<tr><td style="background:' . $headerBg . ';padding:20px 24px;border-bottom:3px solid ' . $primaryColor . ';">';
+        $html .= '<div style="font-size:18px;font-weight:700;color:' . $headerText . ';">' . htmlspecialchars($formName) . '</div>';
+        $html .= '</td></tr>';
+
+        // Body
+        $html .= '<tr><td style="background:#ffffff;padding:28px 24px;">';
+        $html .= '<p style="font-size:15px;color:' . $textColor . ';margin:0 0 18px 0;line-height:1.5;">' . $greeting . '</p>';
+
+        // Selections summary
+        $html .= '<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">';
+        $html .= '<tr><td style="padding:6px 0;font-size:13px;color:' . $accentColor . ';font-weight:600;width:140px;">Service</td>';
+        $html .= '<td style="padding:6px 0;font-size:13px;color:' . $textColor . ';">' . htmlspecialchars($service) . '</td></tr>';
+        $html .= '<tr><td style="padding:6px 0;font-size:13px;color:' . $accentColor . ';font-weight:600;">Complexity</td>';
+        $html .= '<td style="padding:6px 0;font-size:13px;color:' . $textColor . ';">' . htmlspecialchars($complexity) . '</td></tr>';
+        if ($addonRows) {
+            $html .= '<tr><td colspan="2" style="padding:10px 0 4px 0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:' . $accentColor . ';">Add-Ons</td></tr>';
+            $html .= $addonRows;
+        }
+        $html .= '</table>';
+
+        // Tiers
+        if ($tierRows) {
+            $html .= '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:' . $accentColor . ';margin-bottom:8px;">Estimate Tiers</div>';
+            $html .= '<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;"><tr>' . $tierRows . '</tr></table>';
+        }
+
+        // Subtotal
+        $html .= '<div style="border-top:2px solid ' . $primaryColor . ';padding-top:12px;margin-bottom:20px;display:flex;justify-content:space-between;">';
+        $html .= '<table width="100%"><tr><td style="font-size:14px;font-weight:700;color:' . $primaryColor . ';">Base Subtotal</td>';
+        $html .= '<td style="text-align:right;font-size:14px;font-weight:700;color:' . $primaryColor . ';">' . $currency . number_format($subtotal) . '</td></tr></table>';
+        $html .= '</div>';
+
+        // Details
+        if ($details !== '') {
+            $html .= '<div style="margin-bottom:20px;padding:12px 14px;border-left:4px solid ' . $accentColor . ';background:' . $primaryColor . '08;">';
+            $html .= '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:' . $accentColor . ';margin-bottom:4px;">Project Details</div>';
+            $html .= '<div style="font-size:13px;line-height:1.5;color:' . $textColor . ';">' . nl2br(htmlspecialchars($details)) . '</div>';
+            $html .= '</div>';
+        }
+
+        // Contact info (shown in both emails)
+        if ($contactRows) {
+            $html .= '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:' . $accentColor . ';margin-bottom:6px;">Contact Information</div>';
+            $html .= '<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">' . $contactRows . '</table>';
+        }
+
+        if ($isClient) {
+            $html .= '<p style="font-size:12px;color:' . $textColor . ';opacity:0.7;line-height:1.5;margin:0;">This is an automated estimate. A team member will review your submission and follow up with a formal quote via email.</p>';
+        }
+
+        $html .= '</td></tr>';
+
+        // Footer
+        $html .= '<tr><td style="background:' . $headerBg . ';padding:14px 24px;text-align:center;border-top:2px solid ' . $primaryColor . ';">';
+        $html .= '<div style="font-size:11px;color:' . $headerText . ';opacity:0.6;">&copy; ' . date('Y') . ' ' . htmlspecialchars($formName) . '</div>';
+        $html .= '</td></tr>';
+
+        $html .= '</table></td></tr></table></body></html>';
+        return $html;
+    };
+
+    $clientBody = $emailBody('Hello ' . $userName . ', thank you for your interest. Here is a summary of the estimate you requested:', true);
+    $adminBody  = $emailBody('A new quote request has been submitted by ' . $userName . '. Details below:', false);
+
+    try {
+        $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+
+        $mode = defined('MAIL_MODE') ? MAIL_MODE : 'server';
+        if ($mode === 'smtp' || $mode === 'tls') {
+            $mail->isSMTP();
+            $mail->Host       = SMTP_HOST;
+            $mail->SMTPAuth   = true;
+            $mail->Username   = SMTP_USERNAME;
+            $mail->Password   = SMTP_PASSWORD;
+            $mail->SMTPSecure = ($mode === 'tls') ? \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS : \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
+            $mail->Port       = SMTP_PORT;
+        } else {
+            $mail->isMail();
+        }
+
+        $fromAddr = defined('MAIL_FROM') ? MAIL_FROM : 'noreply@example.com';
+        $fromName = defined('MAIL_FROM_NAME') ? MAIL_FROM_NAME : $formName;
+        $adminTo  = defined('MAIL_TO') ? MAIL_TO : '';
+
+        // 1. Send to business/developer
+        $adminSent = false;
+        if ($adminTo !== '') {
+            $mail->setFrom($fromAddr, $fromName);
+            $mail->addAddress($adminTo);
+            if ($userEmail) {
+                $mail->addReplyTo($userEmail, $userName);
+            }
+            $mail->isHTML(true);
+            $mail->Subject = 'New Quote Request - ' . $userName;
+            $mail->Body    = $adminBody;
+            $mail->AltBody = strip_tags(str_replace(['<br>', '<br/>', '<br />'], "\n", $adminBody));
+            $mail->send();
+            $adminSent = true;
+        }
+
+        // 2. Send to user (confirmation)
+        if ($userEmail) {
+            $mail->clearAddresses();
+            $mail->clearReplyTos();
+            $mail->setFrom($fromAddr, $fromName);
+            $mail->addAddress($userEmail, $userName);
+            $mail->isHTML(true);
+            $mail->Subject = 'Your Estimate - ' . htmlspecialchars($formName);
+            $mail->Body    = $clientBody;
+            $mail->AltBody = strip_tags(str_replace(['<br>', '<br/>', '<br />'], "\n", $clientBody));
+            $mail->send();
+        }
+
+        return true;
+    } catch (\Exception $e) {
+        error_log('XCM Quote Email Error: ' . $e->getMessage());
+        return false;
+    }
+}
+// ── End form submission handler ───────────────────────────────────────────────
+
 $sty   = $form['style']    ?? [];
 $lang  = $form['language']  ?? [];
 $tiers = $form['tiers']     ?? [
@@ -337,14 +545,14 @@ body { min-height: 100vh; display: flex; flex-direction: column; }
                     <?php if (!empty($f['required'])): ?><span class="pv-req">*</span><?php endif; ?>
                 </label>
                 <?php if (($f['type'] ?? 'text') === 'select' && !empty($f['options'])): ?>
-                    <select class="pv-select"<?php if (!empty($f['required'])): ?> data-required="1" data-label="<?= htmlspecialchars($f['label'] ?? 'Field') ?>"<?php endif; ?>>
+                    <select class="pv-select" data-key="<?= htmlspecialchars($f['key'] ?? '') ?>"<?php if (!empty($f['required'])): ?> data-required="1" data-label="<?= htmlspecialchars($f['label'] ?? 'Field') ?>"<?php endif; ?>>
                         <option value="">-- Select --</option>
                         <?php foreach ($f['options'] as $opt): ?>
                         <option><?= htmlspecialchars($opt) ?></option>
                         <?php endforeach; ?>
                     </select>
                 <?php else: ?>
-                    <input class="pv-input" type="<?= htmlspecialchars($f['type'] ?? 'text') ?>" placeholder=""<?php if (!empty($f['required'])): ?> data-required="1" data-label="<?= htmlspecialchars($f['label'] ?? 'Field') ?>"<?php endif; ?>>
+                    <input class="pv-input" type="<?= htmlspecialchars($f['type'] ?? 'text') ?>" placeholder="" data-key="<?= htmlspecialchars($f['key'] ?? '') ?>"<?php if (!empty($f['required'])): ?> data-required="1" data-label="<?= htmlspecialchars($f['label'] ?? 'Field') ?>"<?php endif; ?>>
                 <?php endif; ?>
             </div>
         <?php endforeach; ?>
@@ -425,7 +633,7 @@ body { min-height: 100vh; display: flex; flex-direction: column; }
         };
     }
 
-    function renderResult(r) {
+    function renderResult(r, emailMsg) {
         var el = document.getElementById('pv-done');
         var html = '<div class="pv-step-block" style="padding:2.5rem 2rem;">';
         html += '<h2 class="pv-result-heading">' + resultHead + '</h2>';
@@ -469,6 +677,10 @@ body { min-height: 100vh; display: flex; flex-direction: column; }
             html += '<div class="pv-disclaimer-title">Important Notice</div>';
             html += resultDisclaimer;
             html += '</div>';
+        }
+
+        if (emailMsg) {
+            html += '<div style="text-align:center;padding:0.8rem;margin-top:1rem;border:1px solid <?= $accentColor ?>40;background:<?= $primaryColor ?>08;font-size:0.82rem;color:<?= $textColor ?>;">' + emailMsg + '</div>';
         }
 
         html += '<div style="text-align:center;margin-top:1.5rem;">';
@@ -588,15 +800,80 @@ body { min-height: 100vh; display: flex; flex-direction: column; }
         show(n);
     };
 
-    window.pvSubmit = function() {
-        if (!validateContact()) return;
-        var result = calcCost();
+    var isPreview = <?= $isBuilderPreview ? 'true' : 'false' ?>;
+
+    function collectContact() {
+        var data = {};
+        document.querySelectorAll('#pv-step-3 .pv-input[data-key], #pv-step-3 .pv-select[data-key]').forEach(function(el) {
+            var key = el.dataset.key;
+            if (key) data[key] = (el.value || '').trim();
+        });
+        return data;
+    }
+
+    function showSubmitting() {
         for (var i = 0; i < total; i++) {
             var el = document.getElementById('pv-step-' + i);
             if (el) el.style.display = 'none';
         }
-        renderResult(result);
-        document.getElementById('pv-done').style.display = '';
+        var done = document.getElementById('pv-done');
+        done.innerHTML = '<div class="pv-step-block" style="padding:2.5rem 2rem;text-align:center;"><p style="font-size:0.92rem;color:<?= $accentColor ?>;margin:1.5rem 0;">Submitting your request...</p></div>';
+        done.style.display = '';
+    }
+
+    window.pvSubmit = function() {
+        if (!validateContact()) return;
+        var result = calcCost();
+        var contactData = collectContact();
+        var details = (document.getElementById('pv-details') || {}).value || '';
+
+        var tierData = [];
+        tiers.forEach(function(t) {
+            tierData.push({
+                name: t.name || 'Tier',
+                price: Math.round(result.subtotal * (t.multiplier || 1)),
+                multiplier: t.multiplier || 1,
+                description: t.description || ''
+            });
+        });
+
+        if (isPreview) {
+            for (var i = 0; i < total; i++) {
+                var el = document.getElementById('pv-step-' + i);
+                if (el) el.style.display = 'none';
+            }
+            renderResult(result);
+            document.getElementById('pv-done').style.display = '';
+            return;
+        }
+
+        showSubmitting();
+
+        var payload = {
+            action: 'submit',
+            contact: contactData,
+            service: result.serviceName,
+            complexity: result.complexityName,
+            addons: result.addons,
+            subtotal: result.subtotal,
+            tiers: tierData,
+            details: details.trim()
+        };
+
+        fetch(window.location.href, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            renderResult(result, d.message || '');
+            document.getElementById('pv-done').style.display = '';
+        })
+        .catch(function() {
+            renderResult(result, '');
+            document.getElementById('pv-done').style.display = '';
+        });
     };
 
     window.pvReset = function() {

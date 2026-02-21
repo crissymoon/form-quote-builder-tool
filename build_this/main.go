@@ -160,6 +160,8 @@ func buildForm(f formMeta) error {
 		{"Generate self-contained index.php", func() error { return generateIndex(deployDir, f) }},
 		{"Copy preview renderer", func() error { return copyFile(filepath.Join(srcDir, "builder", "preview.php"), filepath.Join(deployDir, "src", "builder", "preview.php")) }},
 		{"Copy assets", func() error { return copyAssets(deployDir) }},
+		{"Copy mail config", func() error { return copyMailConfig(deployDir) }},
+		{"Copy vendor (PHPMailer)", func() error { return copyDir("../vendor", filepath.Join(deployDir, "vendor")) }},
 		{"Generate .htaccess", func() error { return generateHtaccess(deployDir) }},
 		{"Generate service worker", func() error { return generateServiceWorker(deployDir) }},
 		{"Write deploy README", func() error { return writeDeployReadme(deployDir, f) }},
@@ -185,6 +187,7 @@ func prepareOutputDir(deployDir string) error {
 		filepath.Join(deployDir, "assets", "css"),
 		filepath.Join(deployDir, "assets", "js"),
 		filepath.Join(deployDir, "src", "builder"),
+		filepath.Join(deployDir, "config"),
 	}
 	for _, d := range dirs {
 		if err := os.MkdirAll(d, 0755); err != nil {
@@ -242,6 +245,33 @@ func copyAssets(deployDir string) error {
 		}
 	}
 	return nil
+}
+
+func copyMailConfig(deployDir string) error {
+	files := []struct{ src, dst string }{
+		{filepath.Join(configDir, "mailer.php"), filepath.Join(deployDir, "config", "mailer.php")},
+		{filepath.Join(configDir, "settings.php"), filepath.Join(deployDir, "config", "settings.php")},
+	}
+	for _, f := range files {
+		if err := copyFile(f.src, f.dst); err != nil {
+			fmt.Printf("(skipped: %s) ", filepath.Base(f.src))
+		}
+	}
+	return nil
+}
+
+func copyDir(src, dst string) error {
+	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		relPath, _ := filepath.Rel(src, path)
+		target := filepath.Join(dst, relPath)
+		if info.IsDir() {
+			return os.MkdirAll(target, 0755)
+		}
+		return copyFile(path, target)
+	})
 }
 
 func generateHtaccess(deployDir string) error {

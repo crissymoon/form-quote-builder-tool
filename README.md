@@ -5,6 +5,7 @@
 Repository: [https://github.com/crissymoon/form-quote-builder-tool](https://github.com/crissymoon/form-quote-builder-tool)
 Portfolio: [https://crissymoon.com](https://crissymoon.com)
 Contact: [crissy@xcaliburmoon.net](mailto:crissy@xcaliburmoon.net)
+Live: [https://xcaliburmoon.net/this_xcaliburmoon_web_development_pricing/](https://xcaliburmoon.net/this_xcaliburmoon_web_development_pricing/)
 
 ---
 
@@ -53,38 +54,40 @@ Added ml/ directory with gen_data.py (generates 2907 labelled rows), quote_math_
 
 ## Description
 
-Xcalibur Moon Web Development Pricing is an open-source, multi-step quote estimation framework built in PHP 8.3+. It guides a prospective client through a structured set of service-related questions covering web development, web design, software engineering, and AI-driven web and native application development, then applies logic-driven pricing rules to produce an estimated price range.
+Xcalibur Moon Web Development Pricing is an open-source, multi-step quote estimation framework built in PHP. It guides a prospective client through a structured set of service-related questions covering web development, web design, software engineering, and AI-driven web and native application development, then applies logic-driven pricing rules to produce a tiered estimate.
 
 XcaliburMoon creates AI-driven web and native apps with smart automations that address real business challenges and boost revenue. This tool reflects that philosophy by allowing visitors to self-qualify their project needs and receive a reference estimate before engaging in a formal discovery conversation.
 
-At the end of the form, the user receives an estimated price range, a time-limited reference ID, and the option to submit the quote request by email for a formal review and finalized quote.
+A live instance is running at [https://xcaliburmoon.net/this_xcaliburmoon_web_development_pricing/](https://xcaliburmoon.net/this_xcaliburmoon_web_development_pricing/). Visitors can walk through the form, receive a tiered estimate with a cost breakdown, and submit their information to receive a formal quote by email.
 
-This project is built as a portable, drop-in framework. A developer configures the form locally using a structured source layout, then runs the `xcm-build-this` Go build tool to compile a deployable, self-contained package that can be placed into any folder on a shared or dedicated hosting environment and function immediately.
+The form is configured entirely through a local form builder dashboard. A developer opens the builder, sets up services, complexity tiers, add-ons, contact fields, and styling, saves the form, then runs the `xcm-build-this` Go build tool to compile a deployable, self-contained package that can be placed into any folder on a shared or dedicated hosting environment and function immediately with no framework dependencies, no build tools on the server, and no database.
 
 ---
 
 ## Features
 
-- Multi-step quote form with pre-built questions, dropdowns, selects, and option groups
-- Logic-driven pricing engine using PHP 8.3+ and Math.js for client-side calculations
-- Estimated price output at form completion based on user-selected service options
+- Form Builder dashboard (`/form-builder`) for configuring services, complexity options, add-ons, contact fields, theme colors, fonts, and all copy without editing any PHP
+- Multi-step quote form with client-side navigation -- no full page reloads between steps
+- Self-contained preview renderer: all CSS and JS are inlined into a single PHP file with no external stylesheet or script dependencies
+- Tiered estimate output (Basic, Standard, Premium) with an itemized cost breakdown at form completion
+- Live preview in the form builder so changes are visible before building
+- Themed HTML emails sent on submission -- one to the business, one to the user as a confirmation
+- Email delivery via PHPMailer supporting SSL (port 465), TLS/STARTTLS (port 587), plain SMTP, or server-level sendmail
+- Browser console diagnostics surfaced on email delivery failures for debugging without server log access
+- iOS-safe email input with `autocapitalize`, `autocorrect`, and `inputmode` attributes and a client-side sanitizer that handles iOS autofill and Contacts-format values
+- JSON-based submission storage with no database dependency
+- Configurable toggles to enable or disable submission saving and email delivery independently
+- Demo mode at `?demo=1` that renders a pre-populated result view through the same renderer as the live form
 - Two-layer quote validation: deterministic PHP rule check plus optional ML confidence scoring via a trained DecisionTreeClassifier
-- Validation result displayed on the result page showing rule status, model confidence percentage, and any incorrect fields
 - Time-limited reference ID generated per quote submission, configurable in the settings file
-- Email submission via PHPMailer supporting TLS, SMTP with credentials, or server-level no-reply delivery
-- JSON-based data storage with no database dependency, allowing full compatibility with the Xcalibur Agent
-- Expired quote data is summarized and archived into a structured clean data file for future model training
+- Expired quote data summarized and archived into a structured clean data file for future model training
 - Kaggle notebook (`ml/quote_math_validator.ipynb`) trains and evaluates the pricing validation model and exports a portable pkl bundle
 - Go-based build tool (`xcm-build-this`) that compiles the full deployable package from source
-- Service worker integration for real-time, instant updates without requiring users to clear cache or history
+- Service worker integration for real-time updates without requiring users to clear cache
 - Versioned asset output with cache-busting built into every build
-- Load animation included in the deployed output for asset-heavy states
 - Drop-in deployment to any `/folder` on shared or dedicated hosting
 - `.htaccess` generated at build time to block direct access to JSON files and enforce routing rules
-- All sensitive credentials must be stored outside the web root and document root
-- Compatible with NGINX and Apache server configurations
-- Compatible with all popular hosting providers
-- Framework approach allowing full local customization of form steps, questions, and pricing logic before building
+- Compatible with NGINX and Apache; tested on Hostinger shared hosting
 
 ---
 
@@ -109,33 +112,40 @@ The following structure represents the local development environment before a bu
 
 ```
 /
-|-- src/                    # Form steps, pricing logic, PHP templates
+|-- src/                          # Application source
+|   |-- builder/
+|       |-- preview.php           # Self-contained quote form renderer (live form + form builder preview)
+|       |-- index.php             # Form Builder dashboard entry point
+|       |-- ui.php                # Form Builder interface
 |   |-- lib/
 |       |-- QuoteEngine.php       # Pricing formula implementation
 |       |-- QuoteValidator.php    # Two-layer validation (rule + ML)
 |       |-- FormSteps.php
 |       |-- ReferenceID.php
-|-- config/                 # Settings files, mailer configuration
-|-- modules/                # Optional compiled modules (Rust or C23)
-|-- data/                   # JSON quote storage and clean data archive
-|-- assets/                 # Stylesheets, JavaScript, and static resources
-|-- ml/                     # Machine learning pricing validation
+|   |-- templates/                # Legacy server-side templates (kept for reference)
+|   |-- index.php                 # Public entry point
+|-- config/                       # Settings files and mailer configuration
+|-- modules/                      # Optional compiled modules (Rust or C23)
+|-- data/
+|   |-- forms/                    # Saved form configurations from the form builder
+|-- assets/                       # Stylesheets, JavaScript, and static resources
+|-- ml/                           # Machine learning pricing validation
 |   |-- gen_data.py               # Generates labelled training CSV (2907 rows)
 |   |-- quote_math_validation.csv # Training and validation dataset
 |   |-- quote_math_validator.ipynb# Kaggle notebook: train, evaluate, save model
 |   |-- validate_quote.py         # CLI wrapper called by QuoteValidator.php
 |   |-- quote_math_model.pkl      # Trained DecisionTreeClassifier bundle
 |   |-- verify.py                 # Local dev smoke test for the pkl
-|-- design_research/        # Research notes and design context files
-|-- build_this/             # xcm-build-this Go build tool
-|-- deploy/                 # Output directory created by xcm-build-this
-|   |-- README.md           # Auto-generated build version and dependency log
-|   |-- this/               # Deployable package, upload this folder to your server
+|-- design_research/              # Research notes and design context files
+|-- build_this/                   # xcm-build-this Go build tool source and compiled binary
+|-- deploy/                       # Output directory created by xcm-build-this
+|   |-- README.md                 # Auto-generated build version and dependency log
+|   |-- this_<form-name>/         # Deployable package, upload this folder to your server
 |       |-- .htaccess
 |       |-- index.php
 |       |-- assets/
 |       |-- (all compiled and optimized files)
-|-- project_mgr/            # Repo management notes and contributor tracking
+|-- project_mgr/                  # Repo management notes and contributor tracking
 |-- LICENSE
 |-- README.md
 ```
@@ -191,20 +201,24 @@ composer require phpmailer/phpmailer
 
 See the [Configuration](#configuration) section before proceeding to the build step.
 
-### Step 4: Run the Build Tool
+### Step 4: Open the Form Builder and Configure Your Form
 
-Navigate to the `build_this/` directory and run `xcm-build-this` to compile the deployment package.
+Start the development server and navigate to `/form-builder`. Set up your services, pricing, styling, and all form copy. Save the form when ready.
+
+### Step 5: Run the Build Tool
+
+Navigate to the `build_this/` directory and run the compiled binary.
 
 ```bash
 cd build_this
-go run xcm-build-this
+./xcm-build-this
 ```
 
-The build output will be placed in `deploy/this/`.
+Select your saved form from the menu. The build output will be placed in `deploy/this_<form-slug>/`.
 
-### Step 5: Deploy
+### Step 6: Deploy
 
-Upload the contents of `deploy/this/` to the desired folder on your server. The application will be active immediately.
+Upload the contents of `deploy/this_<form-slug>/` to the desired folder on your server. The application will be active immediately.
 
 ---
 
@@ -218,15 +232,16 @@ The mailer supports three delivery modes. Set the mode and provide the correspon
 
 | Setting | Description |
 |---|---|
-| `MAIL_MODE` | Set to `smtp`, `tls`, or `server` |
+| `MAIL_MODE` | Set to `ssl`, `tls`, `smtp`, or `server` |
 | `SMTP_HOST` | Your SMTP server hostname |
-| `SMTP_PORT` | Port number (typically 587 for TLS, 465 for SSL) |
+| `SMTP_PORT` | Port number (`465` for SSL, `587` for TLS/STARTTLS) |
 | `SMTP_USERNAME` | SMTP account username |
 | `SMTP_PASSWORD` | SMTP account password, stored outside the web root |
-| `MAIL_FROM` | The no-reply or sender email address |
+| `MAIL_FROM` | The sender email address |
+| `MAIL_FROM_NAME` | The sender display name |
 | `MAIL_TO` | The destination address that receives submitted quote requests |
 
-When using the `server` mode, PHPMailer will use the server's native mail function without SMTP credentials. This is suitable for environments where a no-reply address is configured at the server level.
+`ssl` uses implicit SSL on port 465 and is the correct mode for Hostinger and most modern shared hosting providers. `tls` uses STARTTLS on port 587. `smtp` is an alias for `ssl`. `server` uses the server's native sendmail or PHP `mail()` function without SMTP credentials.
 
 ### Quote Reference ID Configuration
 
@@ -244,30 +259,56 @@ All values marked as sensitive, including SMTP passwords, API keys, and any futu
 
 ---
 
+## Form Builder
+
+The form builder is a local dashboard used to configure every aspect of the quote form before building. It runs inside the development environment and is not accessible in the deployed output.
+
+Open the form builder by navigating to `/form-builder` in your local dev server. From there you can:
+
+- Set the form name, description, and optional intro video
+- Add, edit, and reorder services with labels, base prices, and help text
+- Configure complexity levels with multipliers and descriptions
+- Add and remove add-on services
+- Define contact form fields (text, email, select) and mark required fields
+- Adjust theme colors, font, and font size
+- Edit all copy: headings, step descriptions, button labels, disclaimer text, and currency symbol
+- Configure pricing tiers (e.g. Basic, Standard, Premium) with per-tier multipliers
+- Toggle the cost breakdown section on or off
+
+All changes are previewed live in the browser before saving. When the form is saved, a JSON configuration file is written to `data/forms/`. The build tool reads this file when compiling the deploy package.
+
+---
+
 ## Build Process
 
-The build tool is `xcm-build-this` and it lives in the `build_this/` folder.
+The build tool is `xcm-build-this`. The pre-compiled binary lives in `build_this/`. Running it opens an interactive menu listing all saved form configurations. Select a form to build, and the tool compiles a complete deployable package.
 
 When executed, it performs the following operations.
 
-1. Reads source files from `src/`, `assets/`, and `config/`
-2. Compiles and minifies CSS using Tailwind CSS directives
-3. Bundles and versions all JavaScript assets with cache-busting hashes
-4. Generates service worker files for real-time update delivery
-5. Compiles all PHP templates into a clean, portable output
-6. Generates the `.htaccess` file for JSON access control and routing
-7. Outputs the complete package to `deploy/this/`
-8. Generates `deploy/README.md` with the build version, timestamp, and a full list of technologies and versions included in that build
+1. Reads the saved form configuration from `data/forms/`
+2. Copies and processes source files from `src/`, `assets/`, and `config/`
+3. Copies PHPMailer source files from the vendor directory
+4. Generates the `.htaccess` file for JSON access control and routing
+5. Generates service worker files for real-time update delivery with versioned asset hashes
+6. Outputs the complete package to `deploy/this_<form-slug>/`
+7. Generates `deploy/README.md` with the build version, timestamp, and a full list of included technologies
 
-The deployed output in `deploy/this/` contains only what is necessary to run the application. No development files, source maps beyond what is useful, or build tooling is included in the output.
+The deployed output contains only what is necessary to run the application. No development files, source maps, or build tooling are included.
 
-A load animation is included in the deployed output and activates when the application detects that heavier assets require time to initialize.
+To rebuild the binary from source:
+
+```bash
+cd build_this
+go build -o xcm-build-this main.go
+```
 
 ---
 
 ## Deployment
 
-Upload the contents of `deploy/this/` to any folder on your server. The application requires no special server configuration beyond PHP 8.3+ and either NGINX or Apache with rewrite support enabled.
+After running the build tool, upload the contents of `deploy/this_<form-slug>/` to the desired folder on your server. The folder name matches the slugified form name set in the form builder and can be renamed before uploading.
+
+The application requires no special server configuration beyond PHP and either NGINX or Apache with rewrite support enabled.
 
 The generated `.htaccess` file handles the following at the application level.
 

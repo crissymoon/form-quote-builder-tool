@@ -168,6 +168,8 @@ function builder_blank(): array
             'detailsLabel'         => 'Additional Details',
             'detailsPlaceholder'   => 'Describe any specific requirements, features, deadlines, or other details that would help us understand your project better.',
             'currency'             => '$',
+            'backLinkUrl'          => '',
+            'backLinkLabel'        => '',
         ],
         'tiers'       => [
             ['name' => 'Basic',    'multiplier' => 0.9, 'description' => 'Essential features only'],

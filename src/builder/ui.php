@@ -337,6 +337,10 @@ a:hover { color: var(--c-accent); }
 
         <!-- Content panel (video / intro) -->
         <div class="props-panel" id="ppanel-content">
+            <p class="prop-section-title">Navigation Link</p>
+            <p style="font-size:0.72rem;color:var(--c-muted);margin-bottom:0.6rem;">An optional link displayed above the header, letting visitors navigate back to your main site.</p>
+            <div class="prop-row"><label class="prop-label">Link URL</label><input type="text" class="prop-input" id="content-backlink-url" placeholder="https://example.com" oninput="contentChanged()"></div>
+            <div class="prop-row"><label class="prop-label">Link label</label><input type="text" class="prop-input" id="content-backlink-label" placeholder="Back to My Website" oninput="contentChanged()"></div>
             <p class="prop-section-title">Intro / Landing</p>
             <p style="font-size:0.72rem;color:var(--c-muted);margin-bottom:0.6rem;">An optional intro screen shown before the first step. Leave the video URL empty to skip the video embed.</p>
             <div class="prop-row"><label class="prop-label">Video URL</label><input type="text" class="prop-input" id="content-video-url" placeholder="YouTube, Vimeo, or embed URL" oninput="contentChanged()"></div>
@@ -1095,6 +1099,8 @@ window.langChanged = function() {
 // -- content panel (video / intro) --
 function populateContentPanel() {
     if (!form) return;
+    setVal('content-backlink-url',   (form.language || {}).backLinkUrl   || '');
+    setVal('content-backlink-label', (form.language || {}).backLinkLabel || '');
     setVal('content-video-url',     form.videoUrl || '');
     setVal('content-intro-heading', (form.language || {}).introHeading     || '');
     setVal('content-intro-text',    (form.language || {}).introText        || '');
@@ -1105,6 +1111,8 @@ window.contentChanged = function() {
     if (!form) return;
     form.videoUrl = getVal('content-video-url');
     if (!form.language) form.language = {};
+    form.language.backLinkUrl      = getVal('content-backlink-url');
+    form.language.backLinkLabel    = getVal('content-backlink-label');
     form.language.introHeading     = getVal('content-intro-heading');
     form.language.introText        = getVal('content-intro-text');
     form.language.introButtonLabel = getVal('content-intro-btn');

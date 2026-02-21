@@ -56,6 +56,9 @@ $detailsPlaceholder = htmlspecialchars(($lang['detailsPlaceholder'] ?? '') ?: 'T
 $currency     = htmlspecialchars($lang['currency'] ?? '$');
 $showBreak    = ($form['showBreakdown'] ?? true) ? 'true' : 'false';
 
+$backLinkUrl    = htmlspecialchars(trim($lang['backLinkUrl'] ?? ''));
+$backLinkLabel  = htmlspecialchars(trim($lang['backLinkLabel'] ?? ''));
+
 $videoUrl       = trim($form['videoUrl'] ?? '');
 $introHeading   = htmlspecialchars($lang['introHeading']    ?? 'Welcome');
 $introText      = htmlspecialchars($lang['introText']       ?? '');
@@ -184,6 +187,12 @@ body { min-height: 100vh; display: flex; flex-direction: column; }
 .pv-confirm-box p { font-size: 0.92rem; margin-bottom: 1.2rem; line-height: 1.5; color: <?= $textColor ?>; }
 .pv-confirm-actions { display: flex; gap: 0.75rem; justify-content: center; }
 .pv-optional-tag { font-weight: 400; font-size: 0.78rem; color: <?= $accentColor ?>; margin-left: 0.3rem; }
+
+/* back-link navigation bar */
+.pv-backlink { background: <?= $textColor ?>; padding: 0.5rem 1.5rem; }
+.pv-backlink a { color: <?= $bgColor ?>; font-size: 0.8rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 500; opacity: 0.85; }
+.pv-backlink a:hover { opacity: 1; }
+.pv-backlink-arrow { font-size: 0.95rem; line-height: 1; }
 </style>
 </head>
 <body>
@@ -193,6 +202,15 @@ body { min-height: 100vh; display: flex; flex-direction: column; }
     <span>PREVIEW | <?= htmlspecialchars($form['name'] ?? 'Quote Form') ?></span>
     <a href="/form-builder?edit=<?= htmlspecialchars(urlencode($form['id'])) ?>">&larr; Back to Editor</a>
 </div>
+<?php endif; ?>
+
+<?php if ($backLinkUrl !== ''): ?>
+<nav class="pv-backlink">
+    <a href="<?= $backLinkUrl ?>">
+        <span class="pv-backlink-arrow">&larr;</span>
+        <?= $backLinkLabel !== '' ? $backLinkLabel : 'Back' ?>
+    </a>
+</nav>
 <?php endif; ?>
 
 <header class="pv-header">

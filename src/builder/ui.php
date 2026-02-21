@@ -492,8 +492,14 @@ window.deleteCurrentForm = function() {
 
 window.openPreview = function() {
     if (!form) { notify('Save the form first, then preview.', true); return; }
-    if (!form.id) { saveForm(); return; }
-    window.open('/form-builder?preview=1&id=' + encodeURIComponent(form.id), '_blank');
+    // Always save current state before opening preview so edits are reflected
+    api('save', { form: form }, function(d) {
+        if (d.error) { notify(d.error, true); return; }
+        form = d.form;
+        document.getElementById('toolbar-form-name').textContent = form.name;
+        loadFormsList();
+        window.open('/form-builder?preview=1&id=' + encodeURIComponent(form.id), '_blank');
+    });
 };
 
 // -- view helpers --

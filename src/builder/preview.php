@@ -764,7 +764,7 @@ body { min-height: 100vh; display: flex; flex-direction: column; }
                         <?php endforeach; ?>
                     </select>
                 <?php else: ?>
-                    <input class="pv-input" type="<?= htmlspecialchars($f['type'] ?? 'text') ?>" placeholder="" data-key="<?= htmlspecialchars($f['key'] ?? '') ?>"<?php if (!empty($f['required'])): ?> data-required="1" data-label="<?= htmlspecialchars($f['label'] ?? 'Field') ?>"<?php endif; ?>>
+                    <input class="pv-input" type="<?= htmlspecialchars($f['type'] ?? 'text') ?>" placeholder=""<?php if (($f['type'] ?? 'text') === 'email'): ?> inputmode="email" autocomplete="email" autocapitalize="off" autocorrect="off" spellcheck="false"<?php endif; ?> data-key="<?= htmlspecialchars($f['key'] ?? '') ?>"<?php if (!empty($f['required'])): ?> data-required="1" data-label="<?= htmlspecialchars($f['label'] ?? 'Field') ?>"<?php endif; ?>>
                 <?php endif; ?>
             </div>
         <?php endforeach; ?>
@@ -981,22 +981,39 @@ body { min-height: 100vh; display: flex; flex-direction: column; }
         if (el) el.remove();
     };
 
+    function cleanEmail(raw) {
+        var v = raw || '';
+        // Strip invisible / zero-width characters everywhere
+        v = v.replace(/[\u00A0\u200B\u200C\u200D\uFEFF\u2060\u00AD]/g, '');
+        // iOS contacts autofill can produce '"Name" <email>' or 'Name <email>'
+        var angle = v.match(/<([^>]+)>/);
+        if (angle) v = angle[1];
+        // Remove any remaining whitespace (iOS can insert spaces around @)
+        v = v.replace(/\s/g, '');
+        // Strip enclosing quotes
+        v = v.replace(/^"+|"+$/g, '');
+        // iOS Smart Punctuation: curly quotes, em-dash, special period
+        v = v.replace(/[\u2018\u2019\u201C\u201D]/g, '');
+        v = v.replace(/\u2014/g, '-');
+        v = v.replace(/\u2024/g, '.');
+        return v.toLowerCase();
+    }
+
     function validateContact() {
         var fields = document.querySelectorAll('#pv-step-3 [data-required]');
         var missing = [];
         for (var i = 0; i < fields.length; i++) {
             var f = fields[i];
-            // Strip all Unicode whitespace (iOS keyboards often insert \u00A0)
+            // Strip all Unicode whitespace
             var val = (f.value || '').replace(/^[\s\u00A0\u200B\uFEFF]+|[\s\u00A0\u200B\uFEFF]+$/g, '');
             if (!val) {
                 missing.push(f.dataset.label || 'Field');
-            } else if (f.type === 'email') {
-                // Normalize: strip any remaining invisible chars inside the value
-                val = val.replace(/[\u00A0\u200B\uFEFF]/g, '');
-                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+            } else if (f.type === 'email' || (f.dataset.key && f.dataset.key.indexOf('email') !== -1)) {
+                val = cleanEmail(f.value);
+                // Lenient check: something @ something . something (min 2-char TLD)
+                if (!val || !/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/.test(val)) {
                     missing.push((f.dataset.label || 'Email') + ' (invalid format)');
                 } else {
-                    // Write sanitized value back so the submitted data is clean
                     f.value = val;
                 }
             }
@@ -1026,7 +1043,12 @@ body { min-height: 100vh; display: flex; flex-direction: column; }
         var data = {};
         document.querySelectorAll('#pv-step-3 .pv-input[data-key], #pv-step-3 .pv-select[data-key]').forEach(function(el) {
             var key = el.dataset.key;
-            if (key) data[key] = (el.value || '').replace(/^[\s\u00A0\u200B\uFEFF]+|[\s\u00A0\u200B\uFEFF]+$/g, '');
+            if (!key) return;
+            if (el.type === 'email' || key.indexOf('email') !== -1) {
+                data[key] = cleanEmail(el.value);
+            } else {
+                data[key] = (el.value || '').replace(/^[\s\u00A0\u200B\uFEFF]+|[\s\u00A0\u200B\uFEFF]+$/g, '');
+            }
         });
         return data;
     }

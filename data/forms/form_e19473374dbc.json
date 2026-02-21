@@ -1,0 +1,186 @@
+{
+    "id": "form_e19473374dbc",
+    "name": "Untitled Quote Form",
+    "description": "",
+    "services": [
+        {
+            "key": "web_design",
+            "label": "Web Design",
+            "price": 1500
+        },
+        {
+            "key": "web_development",
+            "label": "Web Development",
+            "price": 3500
+        },
+        {
+            "key": "ecommerce",
+            "label": "E-Commerce",
+            "price": 4500
+        },
+        {
+            "key": "software",
+            "label": "Custom Software",
+            "price": 7500
+        },
+        {
+            "key": "ai_web_app",
+            "label": "AI-Driven Web Application",
+            "price": 9500
+        },
+        {
+            "key": "ai_native_app",
+            "label": "AI-Driven Native Application",
+            "price": 14000
+        }
+    ],
+    "complexity": [
+        {
+            "key": "simple",
+            "label": "Simple",
+            "description": "Basic pages, minimal interactions",
+            "multiplier": 1
+        },
+        {
+            "key": "moderate",
+            "label": "Moderate",
+            "description": "Custom features, some integrations",
+            "multiplier": 1.4
+        },
+        {
+            "key": "complex",
+            "label": "Complex",
+            "description": "Advanced logic, multiple integrations",
+            "multiplier": 2
+        },
+        {
+            "key": "custom",
+            "label": "Custom",
+            "description": "AI, automation, or enterprise-scale work",
+            "multiplier": 2.8
+        }
+    ],
+    "addons": [
+        {
+            "key": "seo_basic",
+            "label": "SEO Setup - Basic",
+            "price": 500
+        },
+        {
+            "key": "seo_advanced",
+            "label": "SEO Setup - Advanced",
+            "price": 1200
+        },
+        {
+            "key": "copywriting",
+            "label": "Copywriting",
+            "price": 800
+        },
+        {
+            "key": "branding",
+            "label": "Branding and Identity",
+            "price": 1800
+        },
+        {
+            "key": "maintenance",
+            "label": "Ongoing Maintenance",
+            "price": 1200
+        },
+        {
+            "key": "hosting_setup",
+            "label": "Hosting Configuration",
+            "price": 350
+        },
+        {
+            "key": "api_integration",
+            "label": "Third-Party API Integration",
+            "price": 1500
+        },
+        {
+            "key": "automation",
+            "label": "Business Process Automation",
+            "price": 2200
+        }
+    ],
+    "contact": [
+        {
+            "key": "name",
+            "label": "Full Name",
+            "type": "text",
+            "required": true
+        },
+        {
+            "key": "email",
+            "label": "Email Address",
+            "type": "email",
+            "required": true
+        },
+        {
+            "key": "company",
+            "label": "Company or Organization",
+            "type": "text",
+            "required": false
+        },
+        {
+            "key": "timeline",
+            "label": "Desired Timeline",
+            "type": "select",
+            "required": true,
+            "options": [
+                "As soon as possible",
+                "Within 1 month",
+                "Within 3 months",
+                "Within 6 months",
+                "Flexible"
+            ]
+        }
+    ],
+    "style": {
+        "primaryColor": "#8b75db",
+        "accentColor": "#459289",
+        "bgColor": "#fcfdfd",
+        "textColor": "#182523",
+        "headerBg": "#244c47",
+        "headerText": "#eaf5f4",
+        "font": "system",
+        "fontSize": "16"
+    },
+    "language": {
+        "headerTitle": "Request a Quote",
+        "headerSubtitle": "Get an accurate estimate for your project",
+        "serviceStepTitle": "Tell us about your project",
+        "serviceStepDesc": "Select the primary service type that best describes what you need.",
+        "complexityStepTitle": "Project Complexity",
+        "complexityStepDesc": "How would you describe the scope and complexity of your project?",
+        "addonStepTitle": "Add-On Services",
+        "addonStepDesc": "Select any additional services you would like included in your estimate.",
+        "contactStepTitle": "Contact Information",
+        "contactStepDesc": "Provide your details so we can follow up with your formal quote.",
+        "nextLabel": "Next",
+        "backLabel": "Back",
+        "submitLabel": "Get Estimate",
+        "resultHeading": "Your Estimate",
+        "resultDesc": "Based on your selections, here are your pricing options.",
+        "currency": "$"
+    },
+    "tiers": [
+        {
+            "name": "Basic",
+            "multiplier": 0.9,
+            "description": "Essential features only"
+        },
+        {
+            "name": "Standard",
+            "multiplier": 1,
+            "description": "Recommended for most projects"
+        },
+        {
+            "name": "Premium",
+            "multiplier": 1.3,
+            "description": "Full-service with priority support"
+        }
+    ],
+    "showBreakdown": true,
+    "updated_at": 1771632709,
+    "created_at": 1771632709
+}

@@ -153,6 +153,11 @@ a:hover { color: var(--c-accent); }
 .prop-color-hex { width: 72px; padding: 0.3rem 0.4rem; border: 1px solid var(--c-border); font-size: 0.75rem; font-family: monospace; color: var(--c-text); background: #fff; }
 .prop-section-title { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--c-muted); margin: 1rem 0 0.5rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--c-border); }
 .prop-section-title:first-child { margin-top: 0; }
+.harmony-controls { margin-bottom: 0.75rem; padding: 0.55rem 0.6rem; border: 1px solid var(--c-border); background: #fff; }
+.harmony-controls .prop-checkbox-row { margin-bottom: 0.45rem; }
+.harmony-controls .prop-row { margin-bottom: 0; }
+.harmony-controls .prop-select { font-size: 0.78rem; }
+.harmony-controls.disabled .prop-select { opacity: 0.4; pointer-events: none; }
 
 /* edit items */
 .edit-item { border: 1px solid var(--c-border); padding: 0.5rem 0.55rem; margin-bottom: 0.35rem; background: #fff; }
@@ -259,6 +264,21 @@ a:hover { color: var(--c-accent); }
             <div class="prop-color-row"><label>Text</label>        <input type="color" id="dp-text"       oninput="styleColorSync(this,'dp-text-hex')">       <input type="text" class="prop-color-hex" id="dp-text-hex"       oninput="styleHexSync(this,'dp-text')"></div>
             <div class="prop-color-row"><label>Header bg</label>   <input type="color" id="dp-headerbg"   oninput="styleColorSync(this,'dp-headerbg-hex')">   <input type="text" class="prop-color-hex" id="dp-headerbg-hex"   oninput="styleHexSync(this,'dp-headerbg')"></div>
             <div class="prop-color-row"><label>Header text</label> <input type="color" id="dp-headertext" oninput="styleColorSync(this,'dp-headertext-hex')"> <input type="text" class="prop-color-hex" id="dp-headertext-hex" oninput="styleHexSync(this,'dp-headertext')"></div>
+            <div class="harmony-controls disabled" id="harmony-box">
+                <div class="prop-checkbox-row">
+                    <input type="checkbox" id="harmony-enable" onchange="toggleHarmony()">
+                    <label for="harmony-enable">Use color harmony</label>
+                </div>
+                <div class="prop-row">
+                    <select class="prop-select" id="harmony-mode" onchange="applyHarmony()">
+                        <option value="complementary">Complementary</option>
+                        <option value="analogous">Analogous</option>
+                        <option value="triadic">Triadic</option>
+                        <option value="split-complementary">Split-Complementary</option>
+                        <option value="monochromatic">Monochromatic</option>
+                    </select>
+                </div>
+            </div>
             <p class="prop-section-title">Typography</p>
             <div class="prop-row">
                 <label class="prop-label">Font</label>
@@ -830,6 +850,12 @@ function populateStylePanel() {
     });
     setVal('dp-font', s.font || 'system');
     setVal('dp-fontsize', s.fontSize || '16');
+    var hEnable = document.getElementById('harmony-enable');
+    var hBox    = document.getElementById('harmony-box');
+    hEnable.checked = !!s.harmonyEnabled;
+    setVal('harmony-mode', s.harmonyMode || 'complementary');
+    if (s.harmonyEnabled) hBox.classList.remove('disabled');
+    else hBox.classList.add('disabled');
 }
 
 window.styleChanged = function() {
@@ -841,12 +867,15 @@ window.styleChanged = function() {
     });
     form.style.font     = getVal('dp-font');
     form.style.fontSize = getVal('dp-fontsize');
+    form.style.harmonyEnabled = document.getElementById('harmony-enable').checked;
+    form.style.harmonyMode    = getVal('harmony-mode');
     updatePreviewStyles();
 };
 
 window.styleColorSync = function(colorEl, hexId) {
     document.getElementById(hexId).value = colorEl.value;
     styleChanged();
+    if (colorEl.id === 'dp-primary') applyHarmony();
 };
 
 window.styleHexSync = function(hexEl, colorId) {
@@ -854,7 +883,120 @@ window.styleHexSync = function(hexEl, colorId) {
     if (/^#[0-9a-fA-F]{6}$/.test(v)) {
         document.getElementById(colorId).value = v;
         styleChanged();
+        if (colorId === 'dp-primary') applyHarmony();
     }
+};
+
+// -- color harmony --
+function hexToHsl(hex) {
+    var r = parseInt(hex.slice(1,3),16)/255;
+    var g = parseInt(hex.slice(3,5),16)/255;
+    var b = parseInt(hex.slice(5,7),16)/255;
+    var max = Math.max(r,g,b), min = Math.min(r,g,b);
+    var h = 0, s = 0, l = (max+min)/2;
+    if (max !== min) {
+        var d = max - min;
+        s = l > 0.5 ? d/(2-max-min) : d/(max+min);
+        if (max === r) h = ((g-b)/d + (g < b ? 6 : 0)) / 6;
+        else if (max === g) h = ((b-r)/d + 2) / 6;
+        else h = ((r-g)/d + 4) / 6;
+    }
+    return [h*360, s*100, l*100];
+}
+
+function hslToHex(h, s, l) {
+    h = ((h % 360) + 360) % 360;
+    s = Math.max(0, Math.min(100, s)) / 100;
+    l = Math.max(0, Math.min(100, l)) / 100;
+    var c = (1 - Math.abs(2*l - 1)) * s;
+    var x = c * (1 - Math.abs((h/60) % 2 - 1));
+    var m = l - c/2;
+    var r = 0, g = 0, b = 0;
+    if (h < 60)       { r=c; g=x; }
+    else if (h < 120) { r=x; g=c; }
+    else if (h < 180) { g=c; b=x; }
+    else if (h < 240) { g=x; b=c; }
+    else if (h < 300) { r=x; b=c; }
+    else              { r=c; b=x; }
+    var toHex = function(v) { var h = Math.round((v+m)*255).toString(16); return h.length < 2 ? '0'+h : h; };
+    return '#' + toHex(r) + toHex(g) + toHex(b);
+}
+
+function computeHarmony(primaryHex, mode) {
+    var hsl = hexToHsl(primaryHex);
+    var h = hsl[0], s = hsl[1], l = hsl[2];
+    var result = {};
+    switch (mode) {
+        case 'complementary':
+            result.accentColor  = hslToHex((h+180)%360, s, l);
+            result.bgColor      = hslToHex(h, Math.max(s-60,5), Math.min(l+42,97));
+            result.textColor    = hslToHex(h, Math.min(s,20), Math.max(l-40,5));
+            result.headerBg     = hslToHex(h, s, Math.max(l-8,5));
+            result.headerText   = hslToHex(h, Math.max(s-55,5), Math.min(l+50,96));
+            break;
+        case 'analogous':
+            result.accentColor  = hslToHex((h+30)%360, s, l);
+            result.bgColor      = hslToHex((h-15+360)%360, Math.max(s-55,5), Math.min(l+42,97));
+            result.textColor    = hslToHex(h, Math.min(s,20), Math.max(l-40,5));
+            result.headerBg     = hslToHex((h-30+360)%360, s, Math.max(l-5,5));
+            result.headerText   = hslToHex(h, Math.max(s-55,5), Math.min(l+50,96));
+            break;
+        case 'triadic':
+            result.accentColor  = hslToHex((h+120)%360, s, l);
+            result.bgColor      = hslToHex((h+240)%360, Math.max(s-60,5), Math.min(l+42,97));
+            result.textColor    = hslToHex(h, Math.min(s,20), Math.max(l-40,5));
+            result.headerBg     = hslToHex(h, s, Math.max(l-8,5));
+            result.headerText   = hslToHex((h+240)%360, Math.max(s-55,5), Math.min(l+50,96));
+            break;
+        case 'split-complementary':
+            result.accentColor  = hslToHex((h+150)%360, s, l);
+            result.bgColor      = hslToHex((h+210)%360, Math.max(s-60,5), Math.min(l+42,97));
+            result.textColor    = hslToHex(h, Math.min(s,20), Math.max(l-40,5));
+            result.headerBg     = hslToHex(h, s, Math.max(l-8,5));
+            result.headerText   = hslToHex(h, Math.max(s-55,5), Math.min(l+50,96));
+            break;
+        case 'monochromatic':
+            result.accentColor  = hslToHex(h, Math.max(s-15,10), Math.min(l+15,65));
+            result.bgColor      = hslToHex(h, Math.max(s-65,5), Math.min(l+45,97));
+            result.textColor    = hslToHex(h, Math.min(s,20), Math.max(l-40,5));
+            result.headerBg     = hslToHex(h, s, Math.max(l-10,5));
+            result.headerText   = hslToHex(h, Math.max(s-60,5), Math.min(l+52,96));
+            break;
+    }
+    return result;
+}
+
+function setColorField(domId, hex) {
+    setVal(domId, hex);
+    setVal(domId + '-hex', hex);
+}
+
+window.toggleHarmony = function() {
+    var on = document.getElementById('harmony-enable').checked;
+    var box = document.getElementById('harmony-box');
+    if (on) box.classList.remove('disabled');
+    else box.classList.add('disabled');
+    if (form && form.style) {
+        form.style.harmonyEnabled = on;
+        form.style.harmonyMode = getVal('harmony-mode');
+    }
+    if (on) applyHarmony();
+};
+
+window.applyHarmony = function() {
+    if (!form || !form.style) return;
+    var on = document.getElementById('harmony-enable').checked;
+    if (!on) return;
+    var mode = getVal('harmony-mode');
+    form.style.harmonyMode = mode;
+    var primary = getVal('dp-primary') || '#244c47';
+    var colors = computeHarmony(primary, mode);
+    setColorField('dp-accent',     colors.accentColor);
+    setColorField('dp-bg',         colors.bgColor);
+    setColorField('dp-text',       colors.textColor);
+    setColorField('dp-headerbg',   colors.headerBg);
+    setColorField('dp-headertext', colors.headerText);
+    styleChanged();
 };
 
 // -- language panel --

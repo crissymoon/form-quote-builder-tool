@@ -101,7 +101,7 @@ function builder_blank(): array
 {
     return [
         'id'          => '',
-        'name'        => 'Untitled Quote Form',
+        'name'        => 'XcaliburMoon Web Development Pricing',
         'description' => '',
         'services'    => [
             ['key' => 'web_design',      'label' => 'Web Design',                    'price' => 1500],

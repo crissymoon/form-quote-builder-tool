@@ -31,8 +31,10 @@ require_once APP_ROOT . '/lib/FormSteps.php';
 session_start();
 
 // ── Check for a builder-configured form ──────────────────────────────────────
-// If the user has built and saved a form in the form builder, render it instead
-// of the hardcoded legacy form. This keeps the front-end in sync with the builder.
+// The front-facing form always renders through the builder's preview renderer
+// so it matches what the user sees in the form builder.  If a saved form exists
+// we use the most recently updated one; otherwise we use the default template.
+
 function load_latest_builder_form(): ?array
 {
     if (!is_dir(BUILDER_FORMS_PATH)) return null;
@@ -53,17 +55,90 @@ function load_latest_builder_form(): ?array
     return $latest;
 }
 
-// Render the builder form if one exists (non-demo, non-step-based requests)
-$isDemo      = isset($_GET['demo']);
-$isStepNav   = isset($_GET['step']);
+function default_builder_form(): array
+{
+    return [
+        'id'          => '',
+        'name'        => 'XcaliburMoon Web Development Pricing',
+        'description' => '',
+        'services'    => [
+            ['key' => 'web_design',      'label' => 'Web Design',                    'price' => 1500],
+            ['key' => 'web_development', 'label' => 'Web Development',               'price' => 3500],
+            ['key' => 'ecommerce',       'label' => 'E-Commerce',                    'price' => 4500],
+            ['key' => 'software',        'label' => 'Custom Software',               'price' => 7500],
+            ['key' => 'ai_web_app',      'label' => 'AI-Driven Web Application',     'price' => 9500],
+            ['key' => 'ai_native_app',   'label' => 'AI-Driven Native Application',  'price' => 14000],
+        ],
+        'complexity'  => [
+            ['key' => 'simple',   'label' => 'Simple',   'description' => 'Basic pages, minimal interactions',         'multiplier' => 1.0],
+            ['key' => 'moderate', 'label' => 'Moderate',  'description' => 'Custom features, some integrations',       'multiplier' => 1.4],
+            ['key' => 'complex',  'label' => 'Complex',   'description' => 'Advanced logic, multiple integrations',    'multiplier' => 2.0],
+            ['key' => 'custom',   'label' => 'Custom',    'description' => 'AI, automation, or enterprise-scale work', 'multiplier' => 2.8],
+        ],
+        'addons'      => [
+            ['key' => 'seo_basic',       'label' => 'SEO Setup - Basic',               'price' => 500],
+            ['key' => 'seo_advanced',    'label' => 'SEO Setup - Advanced',            'price' => 1200],
+            ['key' => 'copywriting',     'label' => 'Copywriting',                     'price' => 800],
+            ['key' => 'branding',        'label' => 'Branding and Identity',           'price' => 1800],
+            ['key' => 'maintenance',     'label' => 'Ongoing Maintenance',             'price' => 1200],
+            ['key' => 'hosting_setup',   'label' => 'Hosting Configuration',           'price' => 350],
+            ['key' => 'api_integration', 'label' => 'Third-Party API Integration',     'price' => 1500],
+            ['key' => 'automation',      'label' => 'Business Process Automation',     'price' => 2200],
+        ],
+        'contact'     => [
+            ['key' => 'name',     'label' => 'Full Name',                    'type' => 'text',   'required' => true],
+            ['key' => 'email',    'label' => 'Email Address',                'type' => 'email',  'required' => true],
+            ['key' => 'company',  'label' => 'Company or Organization',      'type' => 'text',   'required' => false],
+            ['key' => 'timeline', 'label' => 'Desired Timeline',             'type' => 'select', 'required' => true,
+             'options' => ['As soon as possible', 'Within 1 month', 'Within 3 months', 'Within 6 months', 'Flexible']],
+        ],
+        'style'       => [
+            'primaryColor' => '#244c47',
+            'accentColor'  => '#459289',
+            'bgColor'      => '#fcfdfd',
+            'textColor'    => '#182523',
+            'headerBg'     => '#244c47',
+            'headerText'   => '#eaf5f4',
+            'font'         => 'system',
+            'fontSize'     => '16',
+        ],
+        'language'    => [
+            'headerTitle'          => 'Request a Quote',
+            'headerSubtitle'       => 'Get an accurate estimate for your project',
+            'serviceStepTitle'     => 'Tell us about your project',
+            'serviceStepDesc'      => 'Select the primary service type that best describes what you need.',
+            'complexityStepTitle'  => 'Project Complexity',
+            'complexityStepDesc'   => 'How would you describe the scope and complexity of your project?',
+            'addonStepTitle'       => 'Add-On Services',
+            'addonStepDesc'        => 'Select any additional services you would like included in your estimate.',
+            'contactStepTitle'     => 'Contact Information',
+            'contactStepDesc'      => 'Provide your details so we can follow up with your formal quote.',
+            'nextLabel'            => 'Next',
+            'backLabel'            => 'Back',
+            'submitLabel'          => 'Get Estimate',
+            'resultHeading'        => 'Your Estimate',
+            'resultDesc'           => 'Based on your selections, here are your pricing options.',
+            'currency'             => '$',
+        ],
+        'tiers'       => [
+            ['name' => 'Basic',    'multiplier' => 0.9, 'description' => 'Essential features only'],
+            ['name' => 'Standard', 'multiplier' => 1.0, 'description' => 'Recommended for most projects'],
+            ['name' => 'Premium',  'multiplier' => 1.3, 'description' => 'Full-service with priority support'],
+        ],
+        'showBreakdown' => true,
+    ];
+}
+
+// Always render through the builder preview renderer so the live form matches
+// the form builder.  Use the latest saved form, or the default template.
+$isDemo       = isset($_GET['demo']);
+$isStepNav    = isset($_GET['step']);
 $isPostAction = ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action']));
 
 if (!$isDemo && !$isStepNav && !$isPostAction) {
-    $form = load_latest_builder_form();
-    if ($form) {
-        require APP_ROOT . '/builder/preview.php';
-        exit;
-    }
+    $form = load_latest_builder_form() ?? default_builder_form();
+    require APP_ROOT . '/builder/preview.php';
+    exit;
 }
 
 // Demo mode: renders a pre-populated result view for visual testing
